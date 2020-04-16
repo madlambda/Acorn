@@ -460,7 +460,7 @@ The design proposed here enables interesting tools and simplify several
 programs. As an example, there's no need for configuration file formats and
 also binary formats are not needed for several use cases.
 
-For example, an hypotethical operating system can chose to store the executable binaries in a struct file instead of a byte-array with a custom binary format
+For example, a hypotethical operating system can chose to store the executable binaries in a struct file instead of a byte-array with a custom binary format
 (ELF, PE, etc).
 This allows for an easy design of the assembler, compiler, linker and loader,
 while also making it easy to inspect the binary file. Eg.:
@@ -529,7 +529,7 @@ $ cat settings
 name = "app"
 host = "localhost"
 port = 8080
-$ 
+$
 ```
 
 Then you can update them easily as well:
@@ -544,7 +544,7 @@ port = 8081
 
 The example code below shows how to make this work for string fields only:
 
-```C
+```c
 int main(int argc, char **argv)
 {
     int root, fd, nargs;
@@ -596,6 +596,21 @@ int main(int argc, char **argv)
     return 0;
 }
 ```
+
+# Network File Systems
+
+A typed file system can also benefit network file systems by providing means of
+requesting specific fields of a structure instead of downloading the full file.
+Executing a binary that locates in a remote file system (eg.: /n/office/bin)
+can be faster because the loader can fetch just the fields required to load
+segments in memory (debugging sections and all non-reachable sections can be
+skipped).
+
+In the case of syncing files with the server, just the field members that
+changed need to be sent instead of the complete file. By using traditional
+file systems, if just 1 bit of the file changes, it makes it required for the
+sync of the full file in most of the cases.
+
 
 1. Jeff Dean: http://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/stanford-295-talk.pdf
 2. http://9p.cat-v.org/
