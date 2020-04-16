@@ -248,7 +248,8 @@ Fundamental Theorem
 On most operating systems, a filesystem is an interface to keep track of files
 and directories on a disk, partition or even a file. As on most systems, a disk,
 a partition and a file are all one-dimensional byte addressable structures,
-then the filesystems drivers maintain a binary format of representing the hierarchical data on them. Each filesystem driver has different ways to achieve
+then the filesystems drivers maintain a binary format of representing the
+hierarchical data on them. Each filesystem driver has different ways to achieve
 its goals for performance, integrity, security and so on.
 When you use a mounted filesystem, the system calls (open, read, etc) operate
 on a file descriptor, that’s a generic handle that works across any kind of
@@ -338,7 +339,8 @@ The design should deal with the case of nested structures or disallow them. In
 case of supporting it (as this expands the range of applications that could
 benefit from it), the design should deal with the problem of passing structures
 between kernel and processes.
-The primitive data types could all be copied, like other system calls, but structures stored in memory have a different layout on each programming
+The primitive data types could all be copied, like other system calls, but
+structures stored in memory have a different layout on each programming
 language. Another problem is that structures commonly are not contiguous in
 memory, then making it risky for any kind of recursive copy of the data
 happening in kernel land (kernel will have to handle cycles in a safe way).
