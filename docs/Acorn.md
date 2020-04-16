@@ -3,7 +3,8 @@
 ## Abstract
 
 Acorn is a new graphical and distributed research operating system that runs on
-top of the WebAssembly stack. It could be thought of a re-invention of inferno™ operating system from Bell Labs but using WASM (abbreviation of WebAssembly)
+top of the WebAssembly stack. It could be thought of a re-invention of inferno™
+operating system from Bell Labs but using WASM (abbreviation of WebAssembly)
 as the Virtual Machine (VM) instead of Dis.
 
 ## Motivation
@@ -28,15 +29,20 @@ can be achieved without resorting to the cloud?
 
 What if you could upgrade your software on one device and they be ready on all others?
 
-What if you get a ransomware malware but there’s no data in the laptop to be destroyed? What if the file server has daily archival of your data? What if you could restore your files from past archives easily?
+What if you get a ransomware malware but there’s no data in the laptop to be
+destroyed? What if the file server has daily archival of your data? What if you
+could restore your files from past archives easily?
 
 That’s some of the things envisioned by Acorn OS.
 
-The web is here to stay, then any new operating system should at least have a browser otherwise users could not adopt. The web stack is huge, bad designed
-and hard to implement properly because there are tons of standards and several deviations from browser vendors. The size of a web browser code base is close
+The web is here to stay, then any new operating system should at least have a
+browser otherwise users could not adopt. The web stack is huge, bad designed
+and hard to implement properly because there are tons of standards and several
+deviations from browser vendors. The size of a web browser code base is close
 to the size of some operating systems.
 
-Plan9 is a full-featured operating system built from scratch with those ideas implemented in the 90s but did not get traction in user adoption and the most
+Plan9 is a full-featured operating system built from scratch with those ideas
+implemented in the 90s but did not get traction in user adoption and the most
 reason was the lack of a modern web browser. Because of the size of the web
 stack, porting a browser to plan9 was so challenging that plan9 developers
 felt easy to port plan9 userspace to other operating systems.
@@ -45,7 +51,8 @@ Userspace plan9 (plan9port) runs as processes on a host UNIX-based operating
 system (Linux, FreeBSD, OSX and so on) and they don’t improve much on UNIX
 problems plan9 was designed to solve.
 
-Inferno™ runs hosted on several operating systems, including on non-UNIX like Windows but it’s not maintained anymore, lacks a web browser and requires the
+Inferno™ runs hosted on several operating systems, including on non-UNIX like
+Windows but it’s not maintained anymore, lacks a web browser and requires the
 use of Limbo Programming Language. Then we could not use it to develop software
 to the current industry.
 
@@ -57,7 +64,8 @@ to notebooks, from Linux to Windows).
 from your notebook to your mobile phone, a server or your friend’s computer.
 * Resurrect the everything is a file concept.
 * Simple programming interfaces (easy to write graphical or distributed apps)
-* Have a modern browser, that means you could use Acorn browser instead of open chrome/firefox
+* Have a modern browser, that means you could use Acorn browser instead of open
+chrome/firefox
 * Be network distributed, in the sense that multiple Acorn servers provides the
 set of visible resources in each terminal.
 * Interoperate and extend current technologies (Containers, Kubernetes, etc)
@@ -65,7 +73,9 @@ set of visible resources in each terminal.
 ## Entering the System
 
 Below is a proposal for an (initially text-based) user interface for Acorn independently if it’s used as a guest OS or bare metal.
-When started, either by booting up the machine from the disk[b][c] or by starting the `acorn` program from the host OS, it must present the interface below:
+When started, either by booting up the machine from the disk[b][c] or by
+starting the `acorn` program from the host OS, it must present the interface
+below:
 
 ```
 Welcome to Acorn Operating System!
@@ -76,7 +86,7 @@ Loading drivers:
     [x] mousefs
     [x] screenfs
     [x] camfs
-Root is from (local, tcp)[local]: 
+Root is from (local, tcp)[local]:
 ```
 
 After basic drivers loaded the system will ask for where the root filesystem
@@ -96,7 +106,8 @@ User [i4k]:
 ```
 
 After mounting the root filesystem the system will prompt for the username that
-owns this session at the terminal. You could give any name, Acorn trusts you. Terminals are not shared by multiple users at the same time but a file server
+owns this session at the terminal. You could give any name, Acorn trusts you.
+Terminals are not shared by multiple users at the same time but a file server
 is.
 
 ```
@@ -108,8 +119,8 @@ File server: not found
 ```
 
 The file /lib/ndb/local is the network database. As this is the first time you
-log into the system, there’s no authentication nor file server configured there.
-In case you had it properly set up you would see something like:
+log into the system, there’s no authentication nor file server configured
+there. In case you had it properly set up you would see something like:
 
 ```
 User[i4k]: Return
@@ -137,7 +148,8 @@ infrastructure. There are several benefits of using a remote file server but
 this will be discussed extensively in the next section.
 
 The symbol λ> is the shell prompt. Now you can type commands into the system
-but Acorn is better with the graphical user interface (GUI). You can start the window manager typing:
+but Acorn is better with the graphical user interface (GUI). You can start the
+window manager typing:
 
 
 ```
@@ -151,7 +163,8 @@ The command above will redraw the screen and present you a Desktop area.
 
 
 Using Chrome as the VM platform we can leverage the hardware access already
-built into browsers exposing them as high-level device drivers into Acorn. That means Acorn could support webcams, for example, without having to maintain a
+built into browsers exposing them as high-level device drivers into Acorn. That
+means Acorn could support webcams, for example, without having to maintain a
 device driver for each camera manufacturer, and the same for everything that
 the browser and NodeJS have APIs (disk, memory, GPU[d][e], screen, mouse,
 keyboard, and so on).
@@ -188,9 +201,10 @@ Screenfs supports a Vector and Raster interface.
 /dev/screen/raster
 ```
 
-When open /dev/screen/vector2d you get a context for a 2D canvas area in the browser. And then you could issue commands like “fillRect(25, 25, 100, 100)” to
+When open /dev/screen/vector2d you get a context for a 2D canvas area in the
+browser. And then you could issue commands like “fillRect(25, 25, 100, 100)” to
 fill a rectangle at pos x=25, y=25 with width=100 and height=100. Same browser
-API defined here. [f][g]
+API defined here.
 
 When using the raster interface you should handle the draw yourself and just
 write to the /dev/screen/raster/primary. You could use several offscreen
