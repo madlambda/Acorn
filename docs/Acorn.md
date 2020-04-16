@@ -11,7 +11,8 @@ as the Virtual Machine (VM) instead of Dis.
 
 Today our data is tied to our computer hardware in the same way it was in the
 80s. We have a personal notebook, a personal mobile phone, a company owned
-notebook and maybe even a company owned mobile phone. Each of those devices has local storages with several hundred gigabytes of data. A big portion of the
+notebook and maybe even a company owned mobile phone. Each of those devices has
+local storages with several hundred gigabytes of data. A big portion of the
 data on the machine's disk is the operating system base programs and they are
 mostly duplicated (the program calc, and hundreds of others, exists in both
 your personal and company notebooks). And talking about your own data, you need
@@ -72,7 +73,8 @@ set of visible resources in each terminal.
 
 ## Entering the System
 
-Below is a proposal for an (initially text-based) user interface for Acorn independently if it’s used as a guest OS or bare metal.
+Below is a proposal for an (initially text-based) user interface for Acorn
+independently if it’s used as a guest OS or bare metal.
 When started, either by booting up the machine from the disk[b][c] or by
 starting the `acorn` program from the host OS, it must present the interface
 below:
