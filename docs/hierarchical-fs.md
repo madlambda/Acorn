@@ -74,7 +74,7 @@ The only option would be a new file interface supporting a mechanism of
 querying his internal data, in other words, the read syscall should be used to
 transport only the data the client demands.
 
-TODO: talk about Nebula filesystem
+TODO: talk about Nebula filesystem [4]
 https://pdfs.semanticscholar.org/99bc/fbe095b591c696809ca21533bcd1d5502587.pdf
 
 
@@ -545,4 +545,4 @@ int main(int argc, char **argv)
 1. Jeff Dean: http://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/stanford-295-talk.pdf
 2. http://9p.cat-v.org/
 3. https://en.wikipedia.org/wiki/Network_File_System
-4. 5. C. Dharap, R. Balay, M. Bowman, Type structured file system, December 1993.
+4. C. Dharap, R. Balay, M. Bowman, Type structured file system, December 1993.
