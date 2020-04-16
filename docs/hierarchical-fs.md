@@ -172,7 +172,7 @@ directly. Take a look in the hypothetical shell session below:
 ```
 $ ls
 config src Makefile
-$ fs/type -schema ./config
+$ fs/type ./config
 struct {
     name string
     port uint16
@@ -211,7 +211,7 @@ addressing:
 ```
 $ ls
 config src Makefile
-$ fs/type -schema ./config
+$ fs/type ./config
 struct {
     name string
     port uint16
@@ -290,10 +290,10 @@ Have a look in the example below:
 
 ```
 $ touch ./disk.ext3
-$ fs/type -schema ./disk.ext3
+$ fs/type ./disk.ext3
 []byte
 $ fs/mkfs.ext3 ./disk.ext3
-$ fs/type -schema ./disk.ext3
+$ fs/type ./disk.ext3
 []byte
 $ fs/mount ./disk.ext3 /n/disk
 $ mkdir /n/disk/dir
