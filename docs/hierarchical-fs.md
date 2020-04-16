@@ -455,6 +455,73 @@ descriptor. The `field` cannot contains slashes as it should be the field name.
 
 TODO: how write works? how data gets serialized to and from kernel?
 
+## Example of novel command line UNIX-like tools
+
+The design proposed here enables interesting tools and simplify several
+programs. Eg.:
+
+### set
+
+The `set` program can be used to set fields in structured files very easily.
+Let's say you hold a structured file for app settings:
+
+```sh
+$ cat settings
+name = "app name"
+host = "localhost"
+port = 8080
+$ 
+```
+
+Then you can set the fields with:
+
+```sh
+$ set settings host="www.madlambda.io" port=8081
+$ cat settings
+name = "app name"
+host = "www.madlambda.io"
+port = 8081
+```
+
+The example code below shows how to make this for string fields only:
+
+```C
+int main(int argc, char **argv)
+{
+    int fd, field;
+
+    if (argc < 4) {
+        usage("set file name value\n");
+    }
+
+    /* open or create a struct if not existant */
+    fd = open(argv[1], "struct", O_WRONLY|O_CREAT, 0664);
+    if (fd < 0) {
+        if (errno == ETYPE) {
+            fprintf(stderr, "file %s is not a struct\n", argv[1]);
+            return 1;
+        }
+
+        perror("failed to open");
+        return 1;
+    }
+
+    field = openat(fd, argv[2], "string", O_WRONLY|O_CREAT, 0644);
+    if (field < 0) {
+         perror(field); /* ENOSPC, ETYPE, EPERM, etc */
+         return 1;
+    }
+
+    if (write(field, argv[3], strlen(argv[3])) < 0) {
+        perror(NULL);
+        return 1;
+    }
+
+    /* need close stuff ? */
+    return 0;
+}
+```
+
 1. Jeff Dean: http://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/stanford-295-talk.pdf
 2. http://9p.cat-v.org/
 3. https://en.wikipedia.org/wiki/Network_File_System
