@@ -402,7 +402,7 @@ void main() {
     /* creates a new member field in the current directory struct */
     fd = create("settings", "struct")
     if (fd < 0) {
-        perror("create file");
+        fatal("create file");
     }
 
      /* error handling ommited for clarity */
@@ -411,14 +411,14 @@ void main() {
 
     field = createat(fd, "credentials", "struct");
     if (field < 0) {
-        perror("create credentials schema");
+        fatal("create credentials schema");
     }
 
     createat(field, "user", "string");
     createat(field, "group", "string");
 
     if (write(fd, &s, sizeof(s)) < 0) {
-        perror("write data");
+        fatal("write data");
     }
 
     return;
@@ -550,8 +550,9 @@ int main(int argc, char **argv)
     int root, fd, nargs;
     char *fname, *field, *value, **p;
 
-    if (argc < 3) {
+    if (argc < 4) {
         usage("set file name value\n");
+        return 1;
     }
 
     nargs = argc - 2;
@@ -566,8 +567,7 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        perror("failed to open");
-        return 1;
+        fatal("failed to open");
     }
 
     for (int i = 0; i < nargs; i++) {
@@ -582,17 +582,14 @@ int main(int argc, char **argv)
 
         fd = openat(root, field, "string", O_WRONLY|O_CREAT, 0644);
         if (fd < 0) {
-            perror(); /* ENOSPC, ETYPE, EPERM, etc */
-            return 1;
+            fatal("create field"); /* ENOSPC, ETYPE, EPERM, etc */
         }
 
         if (write(fd, value, strlen(value)) < 0) {
-            perror();
-            return 1;
+            fatal("write field");
         }
     }
 
-    /* need close stuff ? */
     return 0;
 }
 ```
