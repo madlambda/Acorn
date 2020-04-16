@@ -51,7 +51,9 @@ express the semantics of the communication and scales well. Eg.: When using
 HTTP, the client software could express the intention of requesting the name
 and email of the user with id equals 10 using the GET method (or verb):
 
-```GET /users/10?fields=name,email```
+```
+GET /users/10?fields=name,email
+```
 
 That way, even if the server store thousand users and even if a user is
 comprised of thousand fields, the server could comprehend the client’s
@@ -84,7 +86,7 @@ signature. That way, the Unix concept of a file is just a file of type
 
 Below are some examples of file types (syntax close to Go):
 
-```
+```go
 []byte      // unix file, you could store anything byte representable.
 
 [4]uint8    // For storing an IP address
@@ -114,7 +116,7 @@ subsequent sections.
 
 Then, if a file has the following type signature:
 
-```
+```go
 struct {
     title string
     year int
@@ -125,10 +127,10 @@ struct {
 
 And if it has the following content (using JSON syntax for convenience):
 
-```
+```json
 {
     "title": "From the Earth to the Moon",
-    “year”: 1875,
+    "year": 1875,
     "author": "Jules Verne",
     "body": "... very long string ..."
 }
