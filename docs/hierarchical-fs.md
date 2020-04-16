@@ -463,40 +463,49 @@ programs. Eg.:
 ### set
 
 The `set` program can be used to set fields in structured files very easily.
-Let's say you hold a structured file for app settings:
+Let's say you want a structured file for app settings:
 
 ```sh
+$ pwd
+/n/app
+$ ls
+$ set settings name=app host=localhost port=8080
 $ cat settings
-name = "app name"
+name = "app"
 host = "localhost"
 port = 8080
 $ 
 ```
 
-Then you can set the fields with:
+Then you can update them easily as well:
 
 ```sh
-$ set settings host="www.madlambda.io" port=8081
+$ set settings host=www.madlambda.io port=8081
 $ cat settings
-name = "app name"
+name = "app"
 host = "www.madlambda.io"
 port = 8081
 ```
 
-The example code below shows how to make this for string fields only:
+The example code below shows how to make this work for string fields only:
 
 ```C
 int main(int argc, char **argv)
 {
-    int fd, field;
+    int root, fd, nargs;
+    char *fname, *field, *value, **p;
 
-    if (argc < 4) {
+    if (argc < 3) {
         usage("set file name value\n");
     }
 
+    nargs = argc - 2;
+    fname = argv[1];
+    p = &argv[2];
+
     /* open or create a struct if not existant */
-    fd = open(argv[1], "struct", O_WRONLY|O_CREAT, 0664);
-    if (fd < 0) {
+    root = open(fname, "struct", O_WRONLY|O_CREAT, 0664);
+    if (root < 0) {
         if (errno == ETYPE) {
             fprintf(stderr, "file %s is not a struct\n", argv[1]);
             return 1;
@@ -506,15 +515,26 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    field = openat(fd, argv[2], "string", O_WRONLY|O_CREAT, 0644);
-    if (field < 0) {
-         perror(field); /* ENOSPC, ETYPE, EPERM, etc */
-         return 1;
-    }
+    for (int i = 0; i < nargs; i++) {
+        field = p[i];
+        value = strchr(field, '=');
+        if (value == NULL) {
+            continue;
+        }
 
-    if (write(field, argv[3], strlen(argv[3])) < 0) {
-        perror(NULL);
-        return 1;
+        *value = '\0''
+        value++;
+
+        fd = openat(root, field, "string", O_WRONLY|O_CREAT, 0644);
+        if (fd < 0) {
+            perror(); /* ENOSPC, ETYPE, EPERM, etc */
+            return 1;
+        }
+
+        if (write(fd, value, strlen(value)) < 0) {
+            perror();
+            return 1;
+        }
     }
 
     /* need close stuff ? */
