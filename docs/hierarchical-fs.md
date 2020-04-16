@@ -358,8 +358,7 @@ the OS syscall API.
 
 ## Programming language examples
 
-Below is a simple system call proposal for a hypothetical (new) operating
-system:
+Below is a simple system call proposal for a hypothetical operating system:
 
 The programming languages that supports typed structures can make use of its
 in memory structs to hold file system data. Eg.:
@@ -458,11 +457,67 @@ TODO: how write works? how data gets serialized to and from kernel?
 ## Example of novel command line UNIX-like tools
 
 The design proposed here enables interesting tools and simplify several
-programs. Eg.:
+programs. As an example, there's no need for configuration file formats and
+also binary formats are not needed for several use cases.
 
-### set
+For example, an hypotethical operating system can chose to store the executable binaries in a struct file instead of a byte-array with a custom binary format
+(ELF, PE, etc).
+This allows for an easy design of the assembler, compiler, linker and loader,
+while also making it easy to inspect the binary file. Eg.:
 
-The `set` program can be used to set fields in structured files very easily.
+```
+$ file /bin/ls
+exec
+$ fs/type /bin/ls
+struct {
+        type string
+        entry uintptr
+        segments [3]struct{
+                vaddr uintptr
+                name string
+                data []byte
+        }
+        sections [100]struct{
+                name string
+                segment int
+                value []byte
+        }
+}
+$ # See next section for details on `get` and `set` programs.
+$ get /bin/ls type
+exec
+$ get /bin/ls entry
+1000000
+$ get /bin/ls segments[0].name
+.text
+$ mount /bin/ls /n/ls
+$ cd /n/ls
+$ ls
+type entry segments sections
+$ cat type
+exec
+$ cat entry
+1000000
+$ ls segments
+0 1 2
+$ ls segments/0
+vaddr name data
+$ cat segments/0/name
+.text
+$ disas segments/0/data
+mov 0, %rbx
+sub 0x10, %rsp
+lea 8(%rsp), %rdi
+call 0x2321000
+...
+```
+
+This design avoids the complexity of executable file formats.
+
+### get and set
+
+The `get` and `set` program can be used to get and set fields in structured
+files very easily from the shell.
 Let's say you want a structured file for app settings:
 
 ```sh
@@ -522,7 +577,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        *value = '\0''
+        *value = '\0';
         value++;
 
         fd = openat(root, field, "string", O_WRONLY|O_CREAT, 0644);
