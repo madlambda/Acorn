@@ -18,7 +18,7 @@ so on) must be in place:
 If the file is on disk, then the time to sequentially read 1 MB of its content
 is around 20ms (or 150 us from an SSD) and if the file is a pipe, then the same
 read could spend 250 us. But if the file is remote then the time goes to a few
-seconds. As the file content does not have an internal structure, a program
+seconds.[1] As the file content does not have an internal structure, a program
 that needs to retrieve some specific information inside it needs to read all
 its content or at least some few blocks until it could seek to the information
 if it has a header section defined. Most files that need to be consumed only by
@@ -244,13 +244,40 @@ destination directory. After that, every open syscall happening on the fields
 (files on the target directory /n/app/) inside the mounted directory will
 operate on the opened file descriptor for the original “config” file (as they
 have the same file interface).
-Fundamental Theorem
+
+## Fundamental Theorem
+
 On most operating systems, a filesystem is an interface to keep track of files
 and directories on a disk, partition or even a file. As on most systems, a disk,
 a partition and a file are all one-dimensional byte addressable structures,
-then the filesystems drivers maintain a binary format of representing the
-hierarchical data on them. Each filesystem driver has different ways to achieve
-its goals for performance, integrity, security and so on.
+then the filesystems drivers maintain a searchable data structure that
+represents the hierarchical data on them. Each filesystem driver has different
+ways to achieve its goals for performance, integrity, security and so on.
+
+The UNIX guys did an important step by representing a disk device as a file in
+the file system (/dev/sda1) and this allows for a lot of interesting features,
+as for example the ability to backup a disk by copying its raw content into
+a file in another filesystem (`dd if=/dev/sda1 of=/backups/sda1.backup`) or
+create a file system inside a file (`mkfs.ext3 ./file`) and mount this file in
+the syntetic file system (`mount -o loop -t ext3 ./file /n`).
+
+This conveniences can be extended even further if we introduce other kinds of
+file types other than byte-arrays. A disk with an ext3 filesystem could be
+thought as a structured typed file where its directories are fields and the
+files are all of type byte array (on existing filesystems like NTFS, ext3, ext4
+and so on).
+
+This idea leads to the following statements:
+
+- Mount is the action of exploding the file system structure members of a file
+into a path.
+- Unmount is the action of imploding (join the members) of a path into an
+structure.
+- _Traditional syntetic file systems are an specialized use case of typed
+syntetic file systems where all members are unidimensional byte arrays._
+- _Mounting a unidimensional disk is the same as mounting a byte-array file._
+- All field types are byte addressable.
+
 When you use a mounted filesystem, the system calls (open, read, etc) operate
 on a file descriptor, that’s a generic handle that works across any kind of
 filesystem. In the lower level, the kernel calls the filesystem API to walk
@@ -258,27 +285,16 @@ through the data structures on it to fetch or overwrite data.
 Typed files stores their data on a binary representation of the hierarchical
 type as well, and much like the filesystems, several implementations apply
 depending on the goals.
-A disk with an ext3 filesystem could be thought as a structured typed file
-where its directories are fields and the files are all of type byte arrays (on
-existing filesystems like NTFS, ext3, ext4 and so on).
 
-What does that mean? That we could use the same file interface when working
-directly with a raw disk.
-Example:
+Have a look in the example below:
 
 ```
+$ touch ./disk.ext3
 $ fs/type -schema ./disk.ext3
 []byte
 $ fs/mkfs.ext3 ./disk.ext3
 $ fs/type -schema ./disk.ext3
 []byte
-$ fs/type -engine ./disk.ext3
-default
-$ fs/register ext3 ./disk.ext3
-$ fs/type -schema ./disk.ext3
-struct {}
-$ fs/type -engine ./disk.ext3
-ext3
 $ fs/mount ./disk.ext3 /n/disk
 $ mkdir /n/disk/dir
 $ echo "hello" > /n/disk/dir/msg
@@ -297,9 +313,9 @@ $ cat ./disk.ext3
 }
 ```
 
-As we have hierarchical file systems[cite Multics and Unix paper], having
-structured files makes it easy to map from one to another. The reverse could
-work also, like unmounting a directory into a file. Eg.:
+As we have hierarchical file systems, having structured files makes it easy to
+map from one to another. The reverse could work also, like unmounting
+(imploding) a directory into a file. Eg.:
 
 ```
 $ fs/mount -l
@@ -322,8 +338,6 @@ struct {
        host string
        port string
 }
-$ fs/type -engine app.fs
-otherfs
 $ cat app.fs | grep "localhost"
        "host": "localhost",
 $
@@ -335,117 +349,111 @@ an open file descriptor of “app.fs” will return the byte representation of t
 directory `/n/app` from the otherfs filesystem engine backed by `/dev/sda2`.
 The kernel will traverse the directories there as if it were a typed file.
 
-The design should deal with the case of nested structures or disallow them. In
-case of supporting it (as this expands the range of applications that could
-benefit from it), the design should deal with the problem of passing structures
-between kernel and processes.
-The primitive data types could all be copied, like other system calls, but
-structures stored in memory have a different layout on each programming
-language. Another problem is that structures commonly are not contiguous in
-memory, then making it risky for any kind of recursive copy of the data
-happening in kernel land (kernel will have to handle cycles in a safe way).
 
-The safest design for this case seems to be the use of a serialization protocol
-and then making all SFile related syscalls to use just byte arrays, easily
-copied to kernel memory. The downside is performance.
+# File System API
 
+Below are several examples of typed hierarchical file system API. The first
+examples explore the high-level API in programming languages and later about
+the OS syscall API.
 
-# Rethinking the File System
-
-## Principles
-
-### System Calls
+## Programming language examples
 
 Below is a simple system call proposal for a hypothetical (new) operating
 system:
 
-Outdated, initial idea
-Programming language examples
+The programming languages that supports typed structures can make use of its
+in memory structs to hold file system data. Eg.:
 
-Below is an example of a Go program to store an integer:
+```C
+#include <sys/mount.h>
 
-```go
-f, err := os.CreateSFile(“./ctl/offset”, “int”)
-if err != nil {
-    log.Fatalf(“error: failed to create file”)
+typedef struct {
+    const char  *host;
+    uint16_t    port;
+    struct {
+        const char  *user;
+        const char  *group;
+    } credentials;
+} settings;
+
+int createat(int fd, const char *name, const char *type) {
+    return openat(fd, name, type, O_CREAT|O_WRONLY|O_TRUNC, 0644);
 }
 
-// err = f.Write([]byte{1, 1, 0, 0}) // error, file is an integer
-// err = f.SetData(0.1) // fail
+int create(const char *name, const char *type) {
+    int  dot;
 
-err = f.SetData(1337) // success
-```
+    dot = open(".", "struct", O_WRONLY, 0);
+    if (dot < 0) {
+        return -1;
+    }
 
-Below is an example of a Go program that stores a structure:
-
-```go
-const fileSpec = `
-struct {
-    minMemory uint32
-    maxMemory uint32
-    numCores uint8
-}`
-
-f, err := os.CreateSFile("settings", fileSpec)
-
-f.Set("minMemory", 0)
-f.Set("maxMemory", 1024*1024)
-f.Set(“numCores”, 8)
-
-f.Sync()
-```
-
-```go
-type KeyVal struct{
-    Name string  `nine:”name”`
-    Value string `nine:”value”`
+    return createat(dot, name, type);
 }
 
-type ServerCfg struct {
-    Attrs []KeyVal `nine:”attrs”`
-    Host  string   `nine:”host”`
-    Port  unt16    `nine:”port”`
-}
+void main() {
+    int       fd, field;
+    settings  s;
 
-cfg := ServerCfg{
-    Attrs: []KeyVal{
-        {Name: “language”, Value: “go”},
-        {Name: “version”, Value: “1.12”},
-    },
+    s.host = "localhost";
+    s.port = 1337;
+    s.credentials.user = "i4k";
+    s.credentials.group = "adm";
 
-    Host: “localhost”,
-    Port: 6666,
-}
+    /* creates a new member field in the current directory struct */
+    fd = create("settings", "struct")
+    if (fd < 0) {
+        perror("create file");
+    }
 
-f, err := os.CreateSFile(“./server.cfg”, nine.FileSpecFrom(cfg))
-handleErr(err)
+     /* error handling ommited for clarity */
+    createat(fd, "host", "string");
+    createat(fd, "port", "uint16");
 
-err = f.SetData(cfg) // serialize object and send kernel message
-handleErr(err)
-```
+    field = createat(fd, "credentials", "struct");
+    if (field < 0) {
+        perror("create credentials schema");
+    }
 
-Below is the SFile interface in Go:
+    createat(field, "user", "string");
+    createat(field, "group", "string");
 
-```
-interface File {
-    io.Reader   // read(fd, buf, count)
-    io.Writer   // write(fd, buf, count)
-    io.ReaderAt // seek(fd, kind, pos)
-    io.WriterAt // seek(fd, kind, pos)
-    io.Closer   // close(fd)
-}
+    if (write(fd, &s, sizeof(s)) < 0) {
+        perror("write data");
+    }
 
-interface SFile {
-        File
-
-        Set(field Field, value interface{}) error
-        SetData(value interface{}) error
-
-
-        Get(field Field) (interface{}, error)
-        GetData(field Field) (interface{}, error)
+    return;
 }
 ```
+
+In the example above, `fd` and `field` are both file descriptors (remember that
+a file is just a field of a structure). The open(2) syscall now has the
+following signature:
+
+```
+int open(const char *name, const char *type, int flags, mode_t mode);
+```
+
+The open(2) syscall try to open `name` path using `type` (the flags and mode
+has the same semantics as POSIX). If the internal type of `name` don't match
+the one supplied then an error should occur, but with the exception of
+byte-array. Any file can be opened as byte array.
+
+If a file is opened as byte-array but it has other internal type, then writing
+to the file destroys the data structure. An operating system implementation can
+choose to only allow opening for read in such cases.
+
+The openat(2) syscall can be used to open a file descriptor for a struct member
+of another file descriptor. Its signature is:
+
+```C
+int openat(int fd, const char *field, const char *type, int flags, mode_t mode);
+```
+
+It has the same semantics as open but opening a field on a struct file
+descriptor. The `field` cannot contains slashes as it should be the field name.
+
+TODO: how write works? how data gets serialized to and from kernel?
 
 1. Jeff Dean: http://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/stanford-295-talk.pdf
 2. http://9p.cat-v.org/
