@@ -4,44 +4,56 @@
 
 The concept of a file is the same (or very close) on most operating systems of
 today. The content of a file is a one-dimensional byte array where the meaning
-of its content comes from the reader. The basic file operations are: create,
-open, read, write and close. That simplicity has a huge impact on the success
-of Multics and Unix, and it still benefits today's software. On Unix based
-operating systems, the input and output of programs are (special) files. This
-way, the output of one program (the standard output file or stdout) could be
-piped into the input (the standard input file or stdin) of another to solve
-complex tasks by just using file manipulation tools. For this to work, a
+of its content comes from the reader's parsing. The basic file operations are:
+create, open, read, write, seek and close. That simplicity has a huge impact on
+the success of Multics and Unix, and it still benefits today's software. On
+Unix based operating systems, the input and output of programs are (special)
+files. This way, the output of one program (the standard output file or stdout)
+could be piped into the input (the standard input file or stdin) of another to
+solve complex tasks by just using file manipulation tools. For this to work, a
 special kind of file, called pipe, and a convention (eg.: read from stdin,
-write to stdout, config from arguments, seeks are not allowed or ignored, and
-so on) must be in place:
+write to stdout, configurations from arguments, seeks are not allowed or
+ignored, and so on) must be in place:
 
 If the file is on disk, then the time to sequentially read 1 MB of its content
 is around 20ms (or 150 us from an SSD) and if the file is a pipe, then the same
 read could spend 250 us. But if the file is remote then the time goes to a few
 seconds.[1] As the file content does not have an internal structure, a program
 that needs to retrieve some specific information inside it needs to read all
-its content or at least some few blocks until it could seek to the information
-if it has a header section defined. Most files that need to be consumed only by
-computer programs have a file format to ease the process of traversing its
-internal data. One way to work around that problem is to split the resource
-information into several files inside a folder. That way, specific fields could
-be directly addressed but the file system is hard to maintain. As an example,
-think about a user’s detail information modeled on several files:
+its content or in case of having a header, at least some few blocks until it
+could seek to the information.
+
+Most files that need to be consumed only by computer programs have a file
+format to ease the process of traversing its internal data. One way to work
+around that problem is to split the resource information into several files
+inside a folder. That way, specific fields could be directly addressed but the
+file system is hard to maintain. As an example, think about a user’s detail
+information modeled on several files:
 
 ```
 $ ls /users/i4k
 firstname surname birthday profession country state address zip
 ```
 
-If the resource has hundreds of fields, as much of the real world applications
-have to deal with JSON APIs that reply with hundreds of them, it would be a
-nightmare to manage.
+If the resource data has hundreds of fields as is the case for some real world
+applications that have to deal with REST APIs that reply with JSONs composed
+of dozens or hundreds of fields, this idea doesn't work well.
+
 Another problem is that file operation being stateful, the kernel is the
 Centralized State Store when managing files local on a single machine, but when
-the file system is remote such thing doesn’t exist (at least not on 9P). The
-NFS is stateless but doesn’t support custom file servers (applications). Being
-stateful means it’s hard to replicate data, load balance, scale file servers up
-and down and so on.
+the file system is remote such guarantees doesn’t exist. The 9P protocol
+operates in a transactional way because the state of the file must be
+maintained at all costs for consistency.
+The NFS protocol is stateless but it doesn’t support custom file servers.
+
+The file system abstraction being stateful means it’s slow to replicate data,
+load balance file reads, scale file servers up and down and so on, because
+each client has to maintain an open connection with the server, and the server
+has to maintain the state for each file descriptor open by clients. It's slow
+because every file operation needs an acknowledment, and so on. That's not a
+network file system fault, but a UNIX (and now POSIX) flaw in the file system
+design.
+
 Because of that, the file abstraction (when exposed through a network protocol
 like 9P[2] or NFS[3]) is not suited for internet applications.
 
@@ -78,7 +90,7 @@ TODO: talk about Nebula filesystem [4]
 https://pdfs.semanticscholar.org/99bc/fbe095b591c696809ca21533bcd1d5502587.pdf
 
 
-## Typed Files
+## Introducing Typed Files
 
 A typed file is a file that has an internal structure defined by a type
 signature. That way, the Unix concept of a file is just a file of type
@@ -166,7 +178,8 @@ There’s a way to implement that without the burden of having separate complex
 get and set syscalls, like adding offset and count to them. This could be
 achieved by asking for a new file descriptor for the field and then using the
 ordinary read and write syscalls on it.
-This idea opens another interesting design, the ability to open a file field
+This idea opens another interesting design idea that can be explored by an
+hypothetical new operating system, tha's the ability to open a file field
 directly. Take a look in the hypothetical shell session below:
 
 ```
@@ -199,7 +212,7 @@ $ cat ./config.host
 In the example above, “config” is a typed file and its content isn’t a JSON but
 cat (using open, read, close syscalls) applied on the file name reads the byte
 representation of the file structure. Opening “./config.host” is the same as
-opening the “./config” and asking a file descriptor for the host field.
+opening the “./config” and asking a file handle for the host field.
 The example above adds a different semantic for paths where dots (.) references
 field attributes of the file, just as an example for a file system design, that
 adds the possibility to reach a specific content (a field) inside the file
@@ -345,7 +358,7 @@ $
 
 In the example above, the created file “app.fs” is logical. It’s just an entry
 in the union mount table of the current namespace. Invoking the read syscall in
-an open file descriptor of “app.fs” will return the byte representation of the
+an open file handle of “app.fs” will return the byte representation of the
 directory `/n/app` from the otherfs filesystem engine backed by `/dev/sda2`.
 The kernel will traverse the directories there as if it were a typed file.
 
