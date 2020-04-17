@@ -21,7 +21,7 @@ to this problem, some people put their data on the cloud in solutions like
 Google Drive or Dropbox but then they have to deal with upload/download of data
 on multiple devices and trust the provider that it does not see their files.
 
-Now think yourself:
+Now think for yourself:
 
 What if you could power up any computer (even the notebook of your mother) and
 see your files and the exact state of your personal computer in the last time
