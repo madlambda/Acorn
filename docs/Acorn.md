@@ -5,7 +5,7 @@
 Acorn is a new graphical and distributed research operating system that runs on
 top of the WebAssembly stack. It could be thought of a re-invention of inferno™
 operating system from Bell Labs but using WASM (abbreviation of WebAssembly)
-as the Virtual Machine (VM) instead of Dis.
+as the Virtual Machine (VM) instead of [Dis](http://www.vitanuova.com/inferno/papers/dis.html).
 
 ## Motivation
 
