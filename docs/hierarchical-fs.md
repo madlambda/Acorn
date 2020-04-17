@@ -377,6 +377,9 @@ The programming languages that supports typed structures can make use of its
 in memory structs to hold file system data. Eg.:
 
 ```C
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/mount.h>
 
 typedef struct {
