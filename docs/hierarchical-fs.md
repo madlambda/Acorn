@@ -4,15 +4,15 @@
 
 The concept of a file is the same (or very close) on most operating systems of
 today. The content of a file is a one-dimensional byte array where the meaning
-of its content comes from the reader's parsing. The basic file operations are:
-create, open, read, write, seek and close. That simplicity has a huge impact on
-the success of Multics and Unix, and it still benefits today's software. On
-Unix based operating systems, the input and output of programs are (special)
-files. This way, the output of one program (the standard output file or stdout)
-could be piped into the input (the standard input file or stdin) of another to
-solve complex tasks by just using file manipulation tools. For this to work, a
-special kind of file, called pipe, and a convention (eg.: read from stdin,
-write to stdout, configurations from arguments, seeks are not allowed or
+of its content comes from the reader's interpretation. The basic file
+operations are: create, open, read, write, seek and close. That simplicity has
+a huge impact on the success of Multics and Unix, and it still benefits today's
+software. On Unix based operating systems, the input and output of programs are
+(special) files. This way, the output of one program (the standard output file
+or stdout) could be piped into the input (the standard input file or stdin) of
+another to solve complex tasks by just using byte manipulation tools. For this
+to work, a special kind of file, called pipe, and a convention (eg.: read from
+stdin, write to stdout, configurations from arguments, seeks are not allowed or
 ignored, and so on) must be in place:
 
 If the file is on disk, then the time to sequentially read 1 MB of its content
@@ -27,38 +27,20 @@ Most files that need to be consumed only by computer programs have a file
 format to ease the process of traversing its internal data. One way to work
 around that problem is to split the resource information into several files
 inside a folder. That way, specific fields could be directly addressed but the
-file system is hard to maintain. As an example, think about a user’s detail
+file layout become hard to maintain. As an example, think about a user’s detail
 information modeled on several files:
 
 ```
-$ ls /users/i4k
-firstname surname birthday profession country state address zip
+$ ls /users/1
+id firstname surname birthday profession country state address zip
 ```
 
 If the resource data has hundreds of fields as is the case for some real world
-applications that have to deal with REST APIs that reply with JSONs composed
-of dozens or hundreds of fields, this idea doesn't work well.
-
-Another problem is that file operation being stateful, the kernel is the
-Centralized State Store when managing files local on a single machine, but when
-the file system is remote such guarantees doesn’t exist. The 9P protocol
-operates in a transactional way because the state of the file must be
-maintained at all costs for consistency.
-The NFS protocol is stateless but it doesn’t support custom file servers.
-
-The file system abstraction being stateful means it’s slow to replicate data,
-load balance file reads, scale file servers up and down and so on, because
-each client has to maintain an open connection with the server, and the server
-has to maintain the state for each file descriptor open by clients. It's slow
-because every file operation needs an acknowledment, and so on. That's not a
-network file system fault, but a UNIX (and now POSIX) flaw in the file system
-design.
-
-Because of that, the file abstraction (when exposed through a network protocol
-like 9P[2] or NFS[3]) is not suited for internet applications.
+applications that have to deal with REST APIs that reply with JSON/XML composed
+of dozens of fields, this idea doesn't work well.
 
 Modern software that communicates on the internet commonly does not share files
-but uses general protocols (HTTP/2/3, GRPC and so on) that support a way to
+but uses general protocols (HTTP/1/2/3, GRPC and so on) that support a way to
 express the semantics of the communication and scales well. Eg.: When using
 HTTP, the client software could express the intention of requesting the name
 and email of the user with id equals 10 using the GET method (or verb):
@@ -68,23 +50,62 @@ GET /users/10?fields=name,email
 ```
 
 That way, even if the server store thousand users and even if a user is
-comprised of thousand fields, the server could comprehend the client’s
-intention and reply with just name and email, saving a lot of bandwidth and
-time.
+comprised of hundred fields, the server could comprehend the client’s intention
+and reply with just name and email, saving a lot of bandwidth and time.
 
 The file interface is heavy used in the design of most operating systems when a
-specialized syscall is not required (procfs, cgroups, and so on) but
-nonexistent in the design of distributed software.
+specialized syscall is not required (procfs, cgroups, and so on) but rare in
+the design of distributed software.
+
+The Plan9 Operating System introduced the 9P protocol, a file abstraction with
+a one-to-one network protocol based on remote procedure calls. This made
+possible programs to become file servers that could communicate by means of
+virtual file operations. This novel idea solves elegantly the inter-process
+communication throughout the system by providing a simple uniform interface
+which programs and kernel can use to communicate.
+
+The Plan9 approach fall short when it comes to modern application requirements.
+Some file servers document its own format that clients must parse in order to
+retrieve specific information. For example, from the manual of mouse(3):
+
+```
+Reading the mouse file returns the mouse
+status: its position and button state.
+
+The read blocks until the state has
+changed since the last read.  The read returns 49 bytes: the
+letter m followed by four decimal strings, each 11 charac-
+ters wide followed by a blank: x and y, coordinates of the
+mouse position in the screen image; buttons, a bitmask with
+the 1, 2, and 4 bits set when the mouse's left, middle, and
+right buttons, respectively, are down; and msec, a timestamp,
+in units of milliseconds.
+```
+
+A client interested in the mouse pointer must read the /dev/mousectl, parse its
+content and convert character strings into integers.
+
+Other file servers, as the upasfs(4) mail file server, split the mailboxes
+into multiple directory and files. The mailbox itself becomes a directory
+under /mail/fs. Each message in the mailbox becomes a numbered directory in the
+mailbox directory, and each attachment becomes a numbered directory in the
+message directory. Then, each message and attachment directory contains the
+files: body, cc, date, digest, disposition, filename, from, header, info,
+inreplyto, mimeheader, raw, rawbody, rawheader, replyto, subject.
+
+Each individual file gives a specific information from the email. This makes
+the the task of mail readers easy, as they can directly access each information
+without having to parse custom formats. But still each file is a unidimensional
+byte array that some need individual parsing (eg.: header, date, cc, inreplyto,
+etc).
 
 Most software makes use of a hierarchical resource system, like the URL in the
 HTTP protocol and a big amount of the protocol designs are just get the content
-of some resource, update the content or create a new resource. That’s just the
-file interface (read, write, create) but it’s useless for internet applications
-as shown earlier.
+of some resource, update the content or create a new resource. That maps 
+perfectly to the file interface (read, write, create) but it’s impractical for
+internet applications as shown earlier.
 
-The only option would be a new file interface supporting a mechanism of
-querying his internal data, in other words, the read syscall should be used to
-transport only the data the client demands.
+A new option would be a new file interface supporting structured data.
 
 TODO: talk about Nebula filesystem [4]
 https://pdfs.semanticscholar.org/99bc/fbe095b591c696809ca21533bcd1d5502587.pdf
@@ -92,11 +113,38 @@ https://pdfs.semanticscholar.org/99bc/fbe095b591c696809ca21533bcd1d5502587.pdf
 
 ## Introducing Typed Files
 
+From the words of Dennis Ritchie and Ken Thompson:
+
+```
+A file contains whatever information the user places on
+it, for example symbolic or binary (object) programs. No
+particular structuring is expected by the system. Files of
+text consist simply of a string of characters, with lines
+demarcated by the new-line character. Binary programs are
+sequences of words as they will appear in core memory
+when the program starts executing. A few user programs
+manipulate files with more structure: the assembler
+generates and the loader expects an object file in a
+particular format. However, the structure of files is
+controlled by the programs which use them, not by the system.
+
+From: The UNIX TimeSharing System - Dennis Ritchie and Ken Thompson
+```
+
+```
+In the UNIX system, a file is a (one-dimensional) array of bytes.
+No other structure of files is implied by the system. Files are attached
+anywhere (and possibly multiply) onto a hierarchy of directories.
+Directories are simply files that users cannot write.
+
+From: Unix Implementation - Ken Thompson
+```
+
 A typed file is a file that has an internal structure defined by a type
 signature. That way, the Unix concept of a file is just a file of type
-“byte array”.
+“byte array” or []byte.
 
-Below are some examples of file types (syntax close to Go):
+Below are some examples of file types (syntax similar to Go):
 
 ```go
 []byte      // unix file, you could store anything byte representable.
@@ -151,12 +199,12 @@ And if it has the following content (using JSON syntax for convenience):
 Then, the typed file interface allows for getting (and setting) each of those
 fields separately without requiring to read the full file.
 The Operating System interface must have a way to answer questions like below
-(given that F is an open File Descriptor):
+(given that F is an open File Handle):
 
 1. From F, give me the type signature;
-2. From F, give me the field called “title”;
-3. From F, give me the fields “title” and “author”;
-4. From F, set field “title” with value “Journey To The Centre Of The Earth”;
+2. From F, give me the field called "title";
+3. From F, give me the fields "title" and "author";
+4. From F, set field "title" with value "Journey To The Centre Of The Earth";
 5. From F, give me the byte array representation of the file;
 
 _Requirement 1_ make it clear that the implementation must store the type
@@ -267,12 +315,13 @@ then the filesystems drivers maintain a searchable data structure that
 represents the hierarchical data on them. Each filesystem driver has different
 ways to achieve its goals for performance, integrity, security and so on.
 
-The UNIX guys did an important step by representing a disk device as a file in
-the file system (/dev/sda1) and this allows for a lot of interesting features,
-as for example the ability to backup a disk by copying its raw content into
-a file in another filesystem (`dd if=/dev/sda1 of=/backups/sda1.backup`) or
-create a file system inside a file (`mkfs.ext3 ./file`) and mount this file in
-the syntetic file system (`mount -o loop -t ext3 ./file /n`).
+The UNIX guys did an important step by representing a disk device as a special
+file in the file system (/dev/sda1) and this allows for a lot of interesting
+features, as for example the ability to backup a disk by copying its raw
+content into a file in another filesystem
+(`dd if=/dev/sda1 of=/backups/sda1.backup`) or create a file system inside a
+file (`mkfs.ext3 ./file`) and mount this file in the syntetic file system
+(`mount -o loop -t ext3 ./file /n`).
 
 This conveniences can be extended even further if we introduce other kinds of
 file types other than byte-arrays. A disk with an ext3 filesystem could be
@@ -284,9 +333,9 @@ This idea leads to the following statements:
 
 - Mount is the action of exploding the file system structure members of a file
 into a path.
-- Unmount is the action of imploding (join the members) of a path into an
+- Unmount is the action of imploding (join the members) of a path into a
 structure.
-- _Traditional syntetic file systems are an specialized use case of typed
+- _Traditional syntetic file systems are specialized use cases of a typed
 syntetic file systems where all members are unidimensional byte arrays._
 - _Mounting a unidimensional disk is the same as mounting a byte-array file._
 - All field types are byte addressable.
@@ -378,7 +427,6 @@ in memory structs to hold file system data. Eg.:
 
 ```C
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mount.h>
 
