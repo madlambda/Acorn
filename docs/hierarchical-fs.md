@@ -16,12 +16,12 @@ stdin, write to stdout, configurations from arguments, seeks are not allowed or
 ignored, and so on) must be in place:
 
 If the file is on disk, then the time to sequentially read 1 MB of its content
-is around 20ms (or 150 us from an SSD) and if the file is a pipe, then the same
-read could spend 250 us. But if the file is remote then the time goes to a few
-seconds.[1] As the file content does not have an internal structure, a program
-that needs to retrieve some specific information inside it needs to read all
-its content or in case of having a header, at least some few blocks until it
-could seek to the information.
+is around 20ms (or 150 us from a SSD disk) and if the file is a pipe, then the
+same read could spend 250 us. But if the file is remote then the time goes to a
+few seconds.[1] As the file content does not have an internal structure, a
+program that needs to retrieve some specific information inside it needs to
+read all its content or in case of having a header, at least some few blocks
+until it could seek to the information.
 
 Most files that need to be consumed only by computer programs have a file
 format to ease the process of traversing its internal data. One way to work
@@ -128,8 +128,8 @@ type mailbox struct {
 }
 ```
 
-As we can see from the type definitions above, other than structure but given
-types to individual members would benefit the client and add guatantees that
+As we can see from the type definitions above, other than structure giving
+types to individual members would benefit the client and add guarantees that
 each file holds the correct data.
 
 Most software makes use of a hierarchical resource system, like the URL in the
@@ -173,18 +173,29 @@ Directories are simply files that users cannot write.
 From: Unix Implementation - Ken Thompson
 ```
 
-A typed file is a file that has an internal structure defined by a type
-signature. That way, the Unix concept of a file is just a file of type
-“byte array” or []byte.
+The definitions above are for regular files. In UNIX, a file can be of type
+"regular", "directory", "block special (devices)", "named pipe" and "link",
+where "regular" is the regular unidimensional byte array defined in the
+excerpts above. The mode field in the inode structure serves the purpose of
+file type.
+
+A typed file system extends these UNIX types and makes explicit its type
+structure. A directory become a file of type "structure", which means it holds
+attributes or member fields. The regular UNIX file is just a file of type
+“byte array” or []byte. Other file types can be used to constraint the kind
+of data user can put on it. For example, a file of type "int32" only accepts
+32-bit signed integers, a file of type "[4]byte" only accepts 4 bytes and so on.
 
 Below are some examples of file types (syntax similar to Go):
 
 ```go
 []byte      // unix file, you could store anything byte representable.
 
-[4]uint8    // For storing an IP address
+[4]uint8    // The file accepts just 4 bytes (eg.: IP address)
 
-string      // for storing UTF-8 string
+string      // for storing UTF-8 strings
+
+bool        // false or true
 
 // For storing a structured data
 struct {
@@ -206,6 +217,24 @@ struct {
 When structured, it’s not wrong to say that the file idea starts to confuse
 with a filesystem or a database and this similarity will be more evident in the
 subsequent sections.
+
+Each type can also has a default value. Below is the description of a possible
+implementation of default values for each type:
+
+- string is empty, ie occupy no space.
+- integers are zeroed (int, uint, int8, int16, int32, int64, uint8, uint16, ...)
+- unbounded arrays are empty, ie occupy no space ([]byte, []int, ...)
+- bounded arrays stores the default value of its members ([4]byte, [2]int32, ...)
+- bool is false
+- datetime is current time.
+- struct stores the default values of its members.
+
+Which means users can benefit of default value to simplify their programs. Eg.:
+
+- To mark the start time of the program it could just create a file of type
+"datetime".
+- User can pre-allocate the file content. A type of "[256]uint64" will store
+256 64-bit integers.
 
 Then, if a file has the following type signature:
 
@@ -236,7 +265,7 @@ The Operating System interface must have a way to answer questions like below
 
 1. From F, give me the type signature;
 2. From F, give me the field called "title";
-3. From F, give me the fields "title" and "author";
+3. From F, give me the content of field "title";
 4. From F, set field "title" with value "Journey To The Centre Of The Earth";
 5. From F, give me the byte array representation of the file;
 
@@ -244,12 +273,10 @@ _Requirement 1_ make it clear that the implementation must store the type
 signature in the file system as well (or have a way to infer it from the stored
 data).
 
-_Requirement 2_ is simple, but what if the field content is bigger than the available memory? What if the field contains another structure?
+_Requirement 3_ is simple, but what if the field content is bigger than the available memory? What if the field contains another structure?
 
-_Requirement 3 and 4_, makes it clear that some mechanism for getting and
-setting multiple fields at once is required;
 _Requirement 5_ says that even for structured files, UNIX commands like cat,
-grep and so on, must work as expected;
+grep and so on, must continue to work as expected;
 
 In order to deal with huge field contents, a kernel implementation must have a
 way to read and write the field contents in blocks, much like the ordinary read
@@ -305,6 +332,7 @@ addressing:
 ```
 $ ls
 config src Makefile
+
 $ fs/type ./config
 struct {
     name string
@@ -314,30 +342,37 @@ struct {
         value string
     }
 }
+
 $ fs/mount ./config /n/app/config
+
 $ ls /n/app/config
 host port attrs dbconfig
+
 $ cat /n/app/config/host
 127.0.0.1
+
 $ cat /n/app/config/port
 6666
+
 $ ls /n/app/config/attrs
 0 1 2 3 4 5 6
+
 $ ls /n/app/config/attrs/0
 name value
+
 $ cat /n/app/config/attrs/0/*
 author unknown
+
 ```
 
-In the example above, the mount syscall is used to create a file tree similar
-to the workaround presented in the last section but using only one real typed
-file. The mount syscall will get a file descriptor for the config file using
-the ordinary open system call, then the kernel will ask for the file type
-signature (maybe using the stat syscall) and then mount a filesystem at the
-destination directory. After that, every open syscall happening on the fields
-(files on the target directory /n/app/) inside the mounted directory will
-operate on the opened file descriptor for the original “config” file (as they
-have the same file interface).
+In the example above, the mount syscall is used to mount the structure in the
+file system by exploding its field into directory and files.The mount syscall
+will get a file descriptor for the config file using the ordinary open system
+call, then the kernel will ask for the file type signature and then mount a
+file tree at the destination directory. After that, every open syscall
+happening on the fields (files on the target directory /n/app/) inside the
+mounted directory will operate on the file members for the original “config”
+file.
 
 ## Fundamental Theorem
 
@@ -375,31 +410,45 @@ syntetic file systems where all members are unidimensional byte arrays._
 
 When you use a mounted filesystem, the system calls (open, read, etc) operate
 on a file descriptor, that’s a generic handle that works across any kind of
-filesystem. In the lower level, the kernel calls the filesystem API to walk
-through the data structures on it to fetch or overwrite data.
-Typed files stores their data on a binary representation of the hierarchical
-type as well, and much like the filesystems, several implementations apply
-depending on the goals.
+filesystem. In the lower level, the kernel calls the VFS (Virtual File System)
+API to walk through the data structures on it to fetch inodes. Each file system
+driver implementation implements the file object interface (read, write, open,
+close, seek, etc) that operates on inodes.
+
+The actual file system driver doesn't need to know anything about the file
+types, but a File System type check layer can ensure the data has the right
+value.
 
 Have a look in the example below:
 
 ```
 $ touch ./disk.ext3
+
 $ fs/type ./disk.ext3
 []byte
+
 $ fs/mkfs.ext3 ./disk.ext3
+
 $ fs/type ./disk.ext3
 []byte
+
 $ fs/mount ./disk.ext3 /n/disk
+
+$ ls /n/disk
+
 $ mkdir /n/disk/dir
+
 $ echo "hello" > /n/disk/dir/msg
+
 $ unmount /n/disk
+
 $ fs/type ./disk.ext3
 struct {
     dir struct {
         msg string
     }
 }
+
 $ cat ./disk.ext3
 {
     "dir": {
@@ -417,22 +466,32 @@ $ fs/mount -l
 # mnt dev engine
 / /dev/sda1 ext4
 /n /dev/sda2 otherfs
+
 $ mkdir /n/app
+
 $ echo "localhost" > /n/app/host
+
 $ echo "6666" > /n/app/port
+
 $ ls /n
 app
+
 $ ls /n/app
 host port
+
 $ fs/unmount /n/app ./app.fs
+
 $ ls /n
+
 $ ls
 app.fs
+
 $ fs/type app.fs
 struct {
        host string
        port string
 }
+
 $ cat app.fs | grep "localhost"
        "host": "localhost",
 $
