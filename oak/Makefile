@@ -11,11 +11,11 @@ INCLUDES=-I.
 LIBS=$(OBJDIR)/lib/libacorn.a
 
 
-SOURCES=oak_test.c	\
-		oak_bin.c	\
+SOURCES=test.c	\
+		bin.c	\
 
 
-TEST_SOURCES=oak_bin_test.c
+TEST_SOURCES=bin_test.c
 
 
 # <file>.c => $OAK_OBJDIR/<file>.o
