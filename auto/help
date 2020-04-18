@@ -1,0 +1,20 @@
+# Copyright (C) Madlambda Authors
+
+cat << END
+
+./configure options:
+
+  --cc=FILE            set C compiler filename, default: "$CC"
+  --cc-opt=OPTIONS     set additional C compiler options
+  --ld-opt=OPTIONS     set additional linker options
+
+  --prefix=DIRECTORY   set prefix for relative pathnames, default: none
+  --bindir=DIRECTORY   set user executables directory name
+                       default: "$BINDIR"
+  --libdir=DIRECTORY   set library directory name, default: "$LIBDIR"
+  --incdir=DIRECTORY   set includes directory name, default: "$INCDIR"
+  --tmp=DIRECTORY      set tmp directory name, default: "$TMPDIR"
+
+  --debug              enable debug logging
+
+END

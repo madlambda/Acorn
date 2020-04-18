@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Copyright (C) Madlambda Authors
+
+# Disable localized messages.
+LC_ALL=C
+export LC_ALL
+
+set -e
+set -u
+
+DEBUG=NO
+CFLAGS=${CFLAGS=}
+LDFLAGS=${LDFLAGS=}
+CC=${CC:-cc}
+CC_OPT=""
+LD_OPT=""
+PREFIX=""
+BINDIR="bin"
+LIBDIR="lib"
+INCDIR="include"
+TMPDIR="tmp"
+BASEDIR=`pwd`
+OBJDIR=$BASEDIR/build
+
+rm -rf "$OBJDIR" Makefile common.mk
+mkdir -p "$OBJDIR" "$OBJDIR/lib"
+
+OS=Unknown
+
+. ./auto/os
+
+echo "Build system: $OS $VERSION"
+echo "Arch: $ARCH"
+
+. ./auto/options
+. ./auto/cc
+. ./auto/make
+
+echo "Configuring Acorn Operating System..."
+
+echo "CC=$CC"
+echo "CFLAGS=$CC_OPT"
+echo "LDFLAGS=$LD_OPT"
+
+echo "done"
+echo "Run: make"

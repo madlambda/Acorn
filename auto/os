@@ -1,0 +1,16 @@
+# Copyright (C) Madlambda Authors
+
+SYSTEM=`uname -s`
+
+case $SYSTEM in
+    Darwin)
+        OS=MacOS
+        VERSION=`uname -r 2>/dev/null`
+        ARCH=`uname -m 2>/dev/null`
+        ;;
+    Linux)
+        OS=Linux
+        VERSION=`uname -r 2>/dev/null`
+        ARCH=`uname -m 2>/dev/null`
+        ;;
+esac
