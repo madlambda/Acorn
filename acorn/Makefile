@@ -1,6 +1,6 @@
 include ../common.mk
 
-SOURCES=mem.c \
+SOURCES=	mem.c \
 		print.c \
 
 OBJECTS=$(patsubst %,$(OBJDIR)/acorn/%,$(patsubst %.c,%.o,$(SOURCES)))
