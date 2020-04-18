@@ -3,9 +3,13 @@
  */
 
 #include <acorn.h>
-#include <oak_test.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <oak_test.h>
+
 
 
 void *

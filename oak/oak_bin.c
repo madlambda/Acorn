@@ -4,6 +4,8 @@
 
 
 #include <acorn.h>
+#include <sys/types.h>
+#include <inttypes.h>
 #include <oak_bin.h>
 
 

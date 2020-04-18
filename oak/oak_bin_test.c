@@ -1,4 +1,8 @@
 #include <acorn.h>
+#include <stddef.h>
+#include <inttypes.h>
+#include <sys/types.h>
+#include <stdlib.h>
 #include <oak_test.h>
 #include <oak_bin.h>
 

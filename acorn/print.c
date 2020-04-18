@@ -5,6 +5,7 @@
 
 #include <acorn.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 
 char *

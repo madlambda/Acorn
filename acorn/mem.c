@@ -3,6 +3,7 @@
  */
 
 #include <acorn.h>
+#include <string.h>
 
 
 void *
