@@ -8,27 +8,25 @@
 
 
 typedef struct {
-    uint64_t  val;
-    uint8_t   size;
-    uint8_t   want[256];
+    u64  val;
+    u8   size;
+    u8   want[256];
 } oak_bin_uleb128_testcase_t;
 
 
 typedef struct {
-    int64_t  val;
-    uint8_t   size;
-    uint8_t   want[256];
+    i64  val;
+    u8   size;
+    u8   want[256];
 } oak_bin_sleb128_testcase_t;
 
 
-uint8_t oak_test_leb128_overflow();
-uint8_t oak_test_leb128_malformed();
-uint8_t oak_test_uleb128_encode(uint64_t v, const uint8_t *want, uint8_t size);
-uint8_t oak_test_uleb128_decode(const uint8_t *encoded, uint8_t size,
-    uint64_t want);
-uint8_t oak_test_sleb128_encode(int64_t v, const uint8_t *want, uint8_t size);
-uint8_t oak_test_sleb128_decode(const uint8_t *encoded, uint8_t size,
-    int64_t want);
+u8 oak_test_leb128_overflow();
+u8 oak_test_leb128_malformed();
+u8 oak_test_uleb128_encode(u64 v, const u8 *want, u8 size);
+u8 oak_test_uleb128_decode(const u8 *encoded, u8 size, u64 want);
+u8 oak_test_sleb128_encode(i64 v, const u8 *want, u8 size);
+u8 oak_test_sleb128_decode(const u8 *encoded, u8 size, i64 want);
 
 
 static const oak_bin_uleb128_testcase_t  oak_uleb_testcases[] = {
@@ -146,8 +144,8 @@ static const oak_bin_sleb128_testcase_t  oak_sleb_testcases[] = {
 
 
 int main() {
+    u8                                ret;
     size_t                            i;
-    uint8_t                           ret;
     const oak_bin_uleb128_testcase_t  *utc;
     const oak_bin_sleb128_testcase_t  *stc;
 
@@ -187,12 +185,12 @@ int main() {
 }
 
 
-uint8_t
+u8
 oak_test_leb128_overflow()
 {
+    u8       *end;
     ssize_t  n;
-    uint8_t  *end;
-    uint8_t  buf[10];
+    u8       buf[10];
 
     /* tests for writing past the buffer */
     end = buf;
@@ -227,15 +225,15 @@ oak_test_leb128_overflow()
 }
 
 
-uint8_t
+u8
 oak_test_leb128_malformed()
 {
-    ssize_t        n;
-    uint64_t       uval;
-    const uint8_t  *end;
+    u64       uval;
+    ssize_t   n;
+    const u8  *end;
 
-    const uint8_t  end_continuation_bit[] = {0x80};
-    const uint8_t  end_continuation_bit2[] = {0xff, 0xff};
+    const u8  end_continuation_bit[]  = {0x80};
+    const u8  end_continuation_bit2[] = {0xff, 0xff};
 
     end = end_continuation_bit + 1;
 
@@ -257,11 +255,11 @@ oak_test_leb128_malformed()
 }
 
 
-uint8_t
-oak_test_uleb128_encode(uint64_t v, const uint8_t *want, uint8_t size)
+u8
+oak_test_uleb128_encode(u64 v, const u8 *want, u8 size)
 {
-    int      i, n;
-    uint8_t  *got, *end, ret;
+    u8   *got, *end, ret;
+    int  i, n;
 
     got = oak_test_alloc(size);
     end = got + size;
@@ -295,12 +293,12 @@ fail:
 }
 
 
-uint8_t
-oak_test_uleb128_decode(const uint8_t *encoded, uint8_t size, uint64_t want)
+u8
+oak_test_uleb128_decode(const u8 *encoded, u8 size, u64 want)
 {
-    ssize_t        got_size;
-    uint64_t       got;
-    const uint8_t  *end;
+    u64       got;
+    ssize_t   got_size;
+    const u8  *end;
 
     end = encoded + size;
 
@@ -321,11 +319,11 @@ oak_test_uleb128_decode(const uint8_t *encoded, uint8_t size, uint64_t want)
 }
 
 
-uint8_t
-oak_test_sleb128_encode(int64_t v, const uint8_t *want, uint8_t size)
+u8
+oak_test_sleb128_encode(i64 v, const u8 *want, u8 size)
 {
-    int      i, n;
-    uint8_t  *got, *end, ret;
+    u8   *got, *end, ret;
+    int  i, n;
 
     got = oak_test_alloc(size);
     end = got + size;
@@ -360,11 +358,11 @@ fail:
 }
 
 
-uint8_t
-oak_test_sleb128_decode(const uint8_t *encoded, uint8_t size, int64_t want) {
-    ssize_t        got_size;
-    int64_t        got;
-    const uint8_t  *end;
+u8
+oak_test_sleb128_decode(const u8 *encoded, u8 size, i64 want) {
+    i64       got;
+    ssize_t   got_size;
+    const u8  *end;
 
     end = encoded + size;
 
