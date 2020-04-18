@@ -99,9 +99,42 @@ without having to parse custom formats. But still each file is a unidimensional
 byte array that some need individual parsing (eg.: header, date, cc, inreplyto,
 etc).
 
+From the definition above, a mailbox can be thought of being the following
+structure:
+
+```
+type message struct {
+    []byte body
+    []byte cc
+    []byte date
+    []byte digest
+    []byte disposition
+    []byte filename
+    []byte from
+    []byte header
+    []byte info
+    []byte inreplyto
+    []byte mimeheader
+    []byte raw
+    []byte rawbody
+    []byte rawheader
+    []byte replyto
+    []byte subject
+}
+
+type mailbox struct {
+    messages []message
+    attachments []message
+}
+```
+
+As we can see from the type definitions above, other than structure but given
+types to individual members would benefit the client and add guatantees that
+each file holds the correct data.
+
 Most software makes use of a hierarchical resource system, like the URL in the
 HTTP protocol and a big amount of the protocol designs are just get the content
-of some resource, update the content or create a new resource. That maps 
+of some resource, update the content or create a new resource. That maps
 perfectly to the file interface (read, write, create) but it’s impractical for
 internet applications as shown earlier.
 
