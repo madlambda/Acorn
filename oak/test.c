@@ -12,15 +12,19 @@
 #include "test.h"
 
 
+/*
+ * These functions must be used in tests.
+ */
+
 
 void *
-test_alloc(size_t size)
+mustalloc(size_t size)
 {
     void  *ptr;
 
     ptr = malloc(size);
     if (slow(ptr == NULL)) {
-        test_error("malloc(%ld): %s", size, strerror(errno));
+        error("malloc(%ld): %s", size, strerror(errno));
         exit(1);
     }
 
@@ -28,8 +32,8 @@ test_alloc(size_t size)
 }
 
 
-void
-test_error(const char *fmt, ...)
+u8
+error(const char *fmt, ...)
 {
     char     *p, *end;
     va_list  vl;
@@ -49,4 +53,6 @@ test_error(const char *fmt, ...)
     *p = '\0';
 
     printf("%s", err);
+
+    return ERR;
 }
