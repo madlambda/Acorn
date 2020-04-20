@@ -5,9 +5,12 @@
 #ifndef _ACORN_H_
 #define _ACORN_H_
 
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdarg.h>
 #include <assert.h>
+
+#include "types.h"
 
 
 #define DEBUG 1

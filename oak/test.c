@@ -8,18 +8,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <oak_test.h>
 
+#include "test.h"
+
+
+/*
+ * These functions must be used in tests.
+ */
 
 
 void *
-oak_test_alloc(size_t size)
+mustalloc(size_t size)
 {
     void  *ptr;
 
     ptr = malloc(size);
     if (slow(ptr == NULL)) {
-        oak_test_error("malloc(%ld): %s", size, strerror(errno));
+        error("malloc(%ld): %s", size, strerror(errno));
         exit(1);
     }
 
@@ -27,8 +32,8 @@ oak_test_alloc(size_t size)
 }
 
 
-void
-oak_test_error(const char *fmt, ...)
+u8
+error(const char *fmt, ...)
 {
     char     *p, *end;
     va_list  vl;
@@ -48,4 +53,6 @@ oak_test_error(const char *fmt, ...)
     *p = '\0';
 
     printf("%s", err);
+
+    return ERR;
 }

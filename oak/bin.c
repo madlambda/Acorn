@@ -6,7 +6,8 @@
 #include <acorn.h>
 #include <sys/types.h>
 #include <inttypes.h>
-#include <oak_bin.h>
+
+#include "bin.h"
 
 
 /*
@@ -15,8 +16,9 @@
  * in the buffer.
  */
 ssize_t
-oak_uleb128_encode(uint64_t v, uint8_t *begin, uint8_t *end) {
-    uint8_t  *p;
+uleb128encode(u64 v, u8 *begin, u8 *end)
+{
+    u8  *p;
 
     p = begin;
 
@@ -50,9 +52,9 @@ oak_uleb128_encode(uint64_t v, uint8_t *begin, uint8_t *end) {
  * in the buffer.
  */
 ssize_t
-oak_sleb128_encode(int64_t v, uint8_t *begin, uint8_t *end)
+sleb128encode(i64 v, u8 *begin, u8 *end)
 {
-    uint8_t  more, *p;
+    u8  more, *p;
 
     more = 1;
     p = begin;
@@ -92,17 +94,17 @@ oak_sleb128_encode(int64_t v, uint8_t *begin, uint8_t *end)
  * read or -1 if the bytes are malformed.
  */
 ssize_t
-oak_bin_uleb128_decode(const uint8_t *begin, const uint8_t *end, uint64_t *res)
+uleb128decode(const u8 *begin, const u8 *end, u64 *res)
 {
-    uint8_t  shift, more, *p;
+    u8  shift, more, *p;
 
     *res = 0;
     shift = 0;
 
-    p = (uint8_t *) begin;
+    p = (u8 *) begin;
 
     do {
-        *res |= ((uint64_t)((*p) & 0x7f) << shift);
+        *res |= ((u64)((*p) & 0x7f) << shift);
 
         shift += 7;
         more = *p & 0x80;
@@ -126,25 +128,25 @@ oak_bin_uleb128_decode(const uint8_t *begin, const uint8_t *end, uint64_t *res)
  * read or -1 if the bytes are malformed.
  */
 ssize_t
-oak_bin_sleb128_decode(const uint8_t *begin, const uint8_t *end, int64_t *res)
+sleb128decode(const u8 *begin, const u8 *end, i64 *res)
 {
-    uint8_t  shift, *p;
+    u8  shift, *p;
 
     *res = 0;
     shift = 0;
 
-    p = (uint8_t *) begin;
+    p = (u8 *) begin;
 
     do {
-        *res |= ((uint64_t)((*p) & 0x7f) << shift);
+        *res |= ((u64)((*p) & 0x7f) << shift);
         shift += 7;
     } while ((*p++ & 0x80) != 0 && p <= end);
 
     --p;
 
     if ((shift < 64) && (*p & 0x40)) {
-        /* shift an uint64 bit pattern to avoid -Werror=shift-negative-value */
-        *res |= (int64_t)(((uint64_t)(-1) << shift));
+        /* shift an u64 bit pattern to avoid -Werror=shift-negative-value */
+        *res |= (i64)(((u64)(-1) << shift));
     }
 
     return (p - begin) + 1;
