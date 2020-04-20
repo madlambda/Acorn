@@ -42,7 +42,7 @@
 #define errset(err, _msg)                                                     \
     do {                                                                      \
         err->msg = (_msg);                                                    \
-        err->data = NULL   ;                                                  \
+        err->data = NULL;                                                     \
     } while (0)
 
 
