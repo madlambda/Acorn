@@ -1,0 +1,27 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Acorn test suite
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        COMPILER: [gcc, clang]
+        FLAGS: ["", "--debug"]
+        os: [macos-latest, ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: configure build
+      run: ./configure --cc=${{matrix.COMPILER}} --ld=${{matrix.LINKER}} ${{matrix.FLAGS}}
+
+    - name: build and test
+      run: make

@@ -13,6 +13,7 @@ DEBUG=NO
 CFLAGS=${CFLAGS=}
 LDFLAGS=${LDFLAGS=}
 CC=${CC:-cc}
+LD=$CC
 CC_OPT=""
 LD_OPT=""
 PREFIX=""
@@ -40,6 +41,7 @@ echo "Arch: $ARCH"
 echo "Configuring Acorn Operating System..."
 
 echo "CC=$CC"
+echo "LD=$LD"
 echo "CFLAGS=$CC_OPT"
 echo "LDFLAGS=$LD_OPT"
 
