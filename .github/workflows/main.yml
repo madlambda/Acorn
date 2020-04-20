@@ -15,41 +15,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        COMPILER: [gcc, clang]
+        FLAGS: ["", "--debug"]
         os: [macos-latest, ubuntu-latest]
-        include:
-          - os: macos-latest
-            COMPILER: clang
-            LINKER: clang
-            FLAGS: ""
-
-          - os: macos-latest
-            COMPILER: clang
-            LINKER: clang
-            FLAGS: "--debug"
-
-          - os: ubuntu-latest
-            COMPILER: gcc
-            LINKER: gcc
-            FLAGS: ""
-
-          - os: ubuntu-latest
-            COMPILER: gcc
-            LINKER: gcc
-            FLAGS: "--debug"
-
-          - os: ubuntu-latest
-            COMPILER: clang
-            LINKER: clang
-            FLAGS: ""
-
-          - os: ubuntu-latest
-            COMPILER: clang
-            LINKER: clang
-            FLAGS: "--debug"
-
     steps:
     - uses: actions/checkout@v2
-
     - name: configure build
       run: ./configure --cc=${{matrix.COMPILER}} --ld=${{matrix.LINKER}} ${{matrix.FLAGS}}
 
