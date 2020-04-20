@@ -151,3 +151,13 @@ sleb128decode(const u8 *begin, const u8 *end, i64 *res)
 
     return (p - begin) + 1;
 }
+
+
+void
+u32decode(const u8 *data, u32 *val)
+{
+    *val = (u32) data[0];
+    *val |= ((u32) data[1]) << 8;
+    *val |= ((u32) data[2]) << 16;
+    *val |= ((u32) data[3]) << 24;
+}

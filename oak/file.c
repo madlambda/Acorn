@@ -33,7 +33,7 @@ openfile(const char *filename, Error *err)
         goto fail;
     }
 
-    file = malloc(sizeof(File));
+    file = zmalloc(sizeof(File));
     if (slow(file == NULL)) {
         goto fail;
     }

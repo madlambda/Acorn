@@ -3,7 +3,7 @@
  */
 
 
-enum {
+typedef enum {
     Custom = 0,
     Type,
     Import,
@@ -20,17 +20,17 @@ enum {
 
 
 typedef struct {
-    u8          id;
-    u32         size;
-    u8*         data;
+    SectionId   id;
+    u32         len;
+    const u8*   data;
 } Section;
 
 
 typedef struct {
     File        *file;
     u32         version;
-    Section     *sections;
-    u16         nsections;
+    Section     *sect;
+    u16         nsect;
 } Module;
 
 

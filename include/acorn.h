@@ -53,6 +53,7 @@ typedef struct {
 
 
 void *copy(void *dst, const void *src, size_t n);
+void *zmalloc(size_t size);
 char *vsprint(char *start, char *end, const char *fmt, va_list vl);
 char *sprint(char *start, char *end, const char *fmt, ...);
 
