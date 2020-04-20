@@ -6,7 +6,8 @@
 #include <acorn.h>
 #include <sys/types.h>
 #include <inttypes.h>
-#include <oak_bin.h>
+
+#include "bin.h"
 
 
 /*
@@ -15,7 +16,8 @@
  * in the buffer.
  */
 ssize_t
-oak_uleb128_encode(u64 v, u8 *begin, u8 *end) {
+uleb128encode(u64 v, u8 *begin, u8 *end)
+{
     u8  *p;
 
     p = begin;
@@ -50,7 +52,7 @@ oak_uleb128_encode(u64 v, u8 *begin, u8 *end) {
  * in the buffer.
  */
 ssize_t
-oak_sleb128_encode(i64 v, u8 *begin, u8 *end)
+sleb128encode(i64 v, u8 *begin, u8 *end)
 {
     u8  more, *p;
 
@@ -92,7 +94,7 @@ oak_sleb128_encode(i64 v, u8 *begin, u8 *end)
  * read or -1 if the bytes are malformed.
  */
 ssize_t
-oak_bin_uleb128_decode(const u8 *begin, const u8 *end, u64 *res)
+uleb128decode(const u8 *begin, const u8 *end, u64 *res)
 {
     u8  shift, more, *p;
 
@@ -126,7 +128,7 @@ oak_bin_uleb128_decode(const u8 *begin, const u8 *end, u64 *res)
  * read or -1 if the bytes are malformed.
  */
 ssize_t
-oak_bin_sleb128_decode(const u8 *begin, const u8 *end, i64 *res)
+sleb128decode(const u8 *begin, const u8 *end, i64 *res)
 {
     u8  shift, *p;
 
