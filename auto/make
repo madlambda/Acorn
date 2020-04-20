@@ -1,0 +1,30 @@
+# Copyright (C) Madlambda Authors
+
+cat << END > common.mk
+CFLAGS=$CC_OPT
+LDFLAGS=$LD_OPT
+
+LIBDIR=$LIBDIR
+INCDIR=$INCDIR
+
+OBJDIR=$OBJDIR
+END
+
+cat << END > Makefile
+include common.mk
+
+all: acorn oak
+
+.PHONY: acorn
+acorn:
+	\$(MAKE) -C acorn
+
+.PHONY: oak
+oak:
+	\$(MAKE) -C oak
+
+.PHONY: clean
+clean:
+	rm -rf \$(OBJDIR)
+
+END

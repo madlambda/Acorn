@@ -1,0 +1,61 @@
+# Copyright (C) Madlambda Authors
+
+for option;
+do
+    case "$option" in
+        -*=*) value=`echo "$option" | sed -e 's/[-_a-zA-Z0-9]*=//'`     ;;
+           *) value="" ;;
+    esac
+
+    case "$option" in
+        --cc=*)                          CC="$value"                         ;;
+        --ld=*)                          LD="$value"                         ;;
+        --cc-opt=*)                      CC_OPT="$value"                     ;;
+        --ld-opt=*)                      LD_OPT="$value"                     ;;
+        --prefix=*)                      PREFIX="$value"                     ;;
+        --bindir=*)                      BINDIR="$value"                     ;;
+        --libdir=*)                      LIBDIR="$value"                     ;;
+        --incdir=*)                      INCDIR="$value"                     ;;
+        --tmpdir=*)                      TMPDIR="$value"                     ;;
+
+        --debug)                         DEBUG=YES                           ;;
+
+        --help)
+            . auto/help
+            exit 0
+        ;;
+
+        *)
+            echo
+            echo $0: error: invalid option \"$option\".
+            echo Run \"$0 --help\" for available options.
+            echo
+            exit 1
+        ;;
+    esac
+done
+
+case "$PREFIX" in
+    ""|*/)  ;;
+     *)  PREFIX="$PREFIX/"  ;;
+esac
+
+case "$BINDIR" in
+    /*)  ;;
+     *)  BINDIR="$PREFIX$BINDIR"  ;;
+esac
+
+case "$LIBDIR" in
+    /*)  ;;
+     *)  LIBDIR="$PREFIX$LIBDIR"  ;;
+esac
+
+case "$INCDIR" in
+    /*)  ;;
+     *)  INCDIR="$PREFIX$INCDIR"  ;;
+esac
+
+case "$TMPDIR" in
+    /*)  ;;
+     *)  TMPDIR="$PREFIX$TMPDIR"  ;;
+esac

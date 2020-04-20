@@ -1,0 +1,13 @@
+# Copyright (C) Madlambda Authors
+
+CC_DBG=""
+LD_DBG=""
+
+if [ $DEBUG = "YES" ]; then
+    CC_DBG="-fsanitize=address -fno-omit-frame-pointer"
+    LD_DBG="-fsanitize=address"
+fi
+
+CC_OPT="-Wall -Werror -Wextra -g -pipe $CC_DBG -I$INCDIR -I$BASEDIR/include \
+        $CC_OPT $CFLAGS"
+LD_OPT="$LD_OPT $LD_DBG $LDFLAGS"
