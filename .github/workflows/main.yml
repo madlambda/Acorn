@@ -52,5 +52,5 @@ jobs:
     - name: configure build
       run: ./configure --cc=${{matrix.COMPILER}} --ld=${{matrix.LINKER}} ${{matrix.FLAGS}}
 
-    - name: Run a multi-line script
+    - name: build and test
       run: make
