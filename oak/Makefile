@@ -7,7 +7,6 @@ include ../common.mk
 OAK_OBJDIR=$(OBJDIR)/oak
 OAK_TESTDIR=$(OAK_OBJDIR)/tests
 DIRS=$(OAK_OBJDIR) $(OAK_TESTDIR)
-INCLUDES=-I.
 LIBS=$(OBJDIR)/lib/libacorn.a
 
 
@@ -48,11 +47,11 @@ $(OAK_TESTDIR):
 
 
 $(OAK_OBJDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test.o: %_test.c
-	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test: $(OAK_TESTDIR)/%_test.o $(OBJECTS)
