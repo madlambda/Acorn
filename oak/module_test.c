@@ -5,86 +5,38 @@
 #include "array.h"
 #include "module.h"
 #include "test.h"
+#include "testdata/ok/empty.h"
+#include "testdata/ok/call1.h"
 
 
 typedef struct {
     const char  *filename;
     const char  *err;
-    Module      module;
+    Module      *module;
 } Testcase;
 
 
-u8 test_module(const Testcase *tc);
-u8 assertmodule(const Module *m1, const Module *m2);
-u8 assertsect(Section *s1, Section *s2);
-
-
-static const u8 call1typedata[] = {
-    0x2, 0x60, 0x1, 0x7f, 0x0, 0x60, 0x0, 0x0
-};
-
-
-static const u8 call1impodata[] = {
-    0x01, 0x07, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74,
-    0x73, 0x0d, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74,
-    0x65, 0x64, 0x5f, 0x66, 0x75, 0x6e, 0x63, 0x00,
-    0x00
-};
-
-
-static const u8 call1funcdata[] = {0x01, 0x01};
-
-
-static const u8 call1expodata[] = {
-    0x01, 0x0d, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
-    0x65, 0x64, 0x5f, 0x66, 0x75, 0x6e, 0x63, 0x00,
-    0x01,
-};
-
-
-static const u8 call1codedata[] = {
-    0x01, 0x06, 0x00, 0x41, 0x2a, 0x10, 0x00, 0x0b,
-};
-
-
-static Section call1sects[] = {
-    {1, 0x8, call1typedata},
-    {2, 0x19, call1impodata},
-    {3, 2, call1funcdata},
-    {7, 0x11, call1expodata},
-    {10, 8, call1codedata},
-};
-
-
-static Array  emptyarray = {
-    .nitems = 0,
-    .items  = NULL,
-    .size   = sizeof(Section),
-};
-
-
-static Array  arraycall1 = {
-    .nitems = 5,
-    .items  = &call1sects,
-    .size   = sizeof(Section),
-};
+static u8 test_module(const Testcase *tc);
+static u8 assertmodule(const Module *m1, const Module *m2);
+static u8 assertsect(Section *s1, Section *s2);
+static u8 assertfuncdecl(FuncDecl *f1, FuncDecl *f2);
 
 
 static const Testcase  invalid_cases[] = {
     {
         "testdata/invalid/notwasm",
         "WASM must have at least 8 bytes",
-        {NULL, 0, NULL},
+        NULL,
     },
     {
         "testdata/ok/empty.wasm",
         NULL,
-        {NULL, 11, &emptyarray},
+        &emptymod,
     },
     {
         "testdata/ok/call1.wasm",
         NULL,
-        {NULL, 1, &arraycall1},
+        &call1mod,
     }
 };
 
@@ -103,7 +55,7 @@ int main()
 }
 
 
-u8
+static u8
 test_module(const Testcase *tc)
 {
     u8      ret;
@@ -124,17 +76,18 @@ test_module(const Testcase *tc)
         return OK;
     }
 
-    ret = assertmodule(m, &tc->module);
+    ret = assertmodule(m, tc->module);
     closemodule(m);
     return ret;
 }
 
 
-u8
+static u8
 assertmodule(const Module *m1, const Module *m2)
 {
-    u16      i;
-    Section  *sect1, *sect2;
+    u16       i;
+    Section   *sect1, *sect2;
+    FuncDecl  *func1, *func2;
 
     if (m1 == m2) {
         return OK;
@@ -148,24 +101,41 @@ assertmodule(const Module *m1, const Module *m2)
         return error("version mismatch (%d != %d)", m1->version, m2->version);
     }
 
-    if (m1->sect == m2->sect) {
-        return OK;
+    if (m1->sects != m2->sects) {
+        if (slow(m1->sects == NULL || m2->sects == NULL)) {
+            return error("sect mismatch (%p != %p)", m1->sects, m2->sects);
+        }
+
+        if (slow(arraylen(m1->sects) != arraylen(m2->sects))) {
+            return error("len(sects) mismatch (%d != %d)",
+                        arraylen(m1->sects), arraylen(m2->sects));
+        }
+
+        for (i = 0; i < arraylen(m1->sects); i++) {
+            sect1 = arrayget(m1->sects, i);
+            sect2 = arrayget(m2->sects, i);
+            if (slow(assertsect(sect1, sect2) != OK)) {
+                return ERR;
+            }
+        }
     }
 
-    if (slow(m1->sect == NULL || m2->sect == NULL)) {
-        return error("sect mismatch (%p != %p)", m1->sect, m2->sect);
-    }
+    if (m1->funcs != m2->funcs) {
+        if (slow(m1->funcs == NULL || m2->funcs == NULL)) {
+            return error("funcs mismatch (%p != %p)", m1->funcs, m2->funcs);
+        }
 
-    if (slow(arraylen(m1->sect) != arraylen(m2->sect))) {
-        return error("len(sects) mismatch (%d != %d)",
-                     arraylen(m1->sect), arraylen(m2->sect));
-    }
+        if (slow(arraylen(m1->funcs) != arraylen(m2->funcs))) {
+            return error("func len mismatch (%u != %u)",
+                         arraylen(m1->funcs), arraylen(m2->funcs));
+        }
 
-    for (i = 0; i < arraylen(m1->sect); i++) {
-        sect1 = arrayget(m1->sect, i);
-        sect2 = arrayget(m2->sect, i);
-        if (slow(assertsect(sect1, sect2) != OK)) {
-            return ERR;
+        for (i = 0; i < arraylen(m1->funcs); i++) {
+            func1 = arrayget(m1->funcs, i);
+            func2 = arrayget(m2->funcs, i);
+            if (slow(assertfuncdecl(func1, func2) != OK)) {
+                return ERR;
+            }
         }
     }
 
@@ -173,18 +143,78 @@ assertmodule(const Module *m1, const Module *m2)
 }
 
 
-u8
+static u8
 assertsect(Section *s1, Section *s2) {
     if (slow(s1->id != s2->id)) {
         return error("section id mismatch (%x != %x)", s1->id, s2->id);
     }
 
     if (slow(s1->len != s2->len)) {
-        return error("section len mismatch (%x != %x)", s1->len, s2->len);
+        return error("section len mismatch (%d != %d)", s1->len, s2->len);
     }
 
     if (slow(memcmp(s1->data, s2->data, s1->len) != 0)) {
         return error("section data mismatch");
+    }
+
+    return OK;
+}
+
+
+static u8
+assertfuncdecl(FuncDecl *f1, FuncDecl *f2)
+{
+    u32     i;
+    TypeId  *p1, *p2;
+
+    if (slow(f1->form != f2->form)) {
+        return error("funcdecl form mismatch (%x != %x)", f1->form, f2->form);
+    }
+
+    if (f1->params != f2->params) {
+        if (slow(f1->params == NULL || f2->params == NULL)) {
+            return error("funcdecl params mismatch (%p != %p)",
+                         f1->params, f2->params);
+        }
+
+        if (slow(arraylen(f1->params) != arraylen(f2->params))) {
+            return error("funcdecl param count mismatch (%u != %u)",
+                         arraylen(f1->params), arraylen(f2->params));
+        }
+
+        for (i = 0; i < arraylen(f1->params); i++) {
+            p1 = arrayget(f1->params, i);
+            p2 = arrayget(f2->params, i);
+
+            if (slow((p1 == NULL || p2 == NULL) || (*p1 != *p2))) {
+                return error("param mismatch (%x != %x)",
+                             (p1 == NULL) ? 0 : *p1,
+                             (p2 == NULL ? 0 : *p2));
+            }
+        }
+    }
+
+    if (f1->rets != f2->rets) {
+        if (slow(f1->rets == NULL || f2->rets == NULL)) {
+            return error("funcdecl rets mismatch (%p != %p)",
+                         f1->rets, f2->rets);
+        }
+
+        if (slow(arraylen(f1->rets) != arraylen(f2->rets))) {
+            return error("funcdecl return count mismatch (%u != %u)",
+                         arraylen(f1->rets), arraylen(f2->rets));
+        }
+
+        for (i = 0; i < arraylen(f1->rets); i++) {
+            p1 = arrayget(f1->rets, i);
+            p2 = arrayget(f2->rets, i);
+
+            if (slow((p1 == NULL || p2 == NULL) || (*p1 != *p2))) {
+                return error("return mismatch (%d != %d)",
+                             (p1 == NULL) ? 0 : *p1,
+                             (p2 == NULL ? 0 : *p2));
+            }
+        }
     }
 
     return OK;
