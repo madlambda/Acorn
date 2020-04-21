@@ -157,13 +157,12 @@ arrayset(Array *array, u32 i, void *val)
 Array *
 shrinkarray(Array *old)
 {
-    void   *items, *p;
+    void   *p;
     Array  *new;
 
     p = offset(old, sizeof(Array));
-    items = old->items;
 
-    if (old->nitems < old->nalloc || p != items) {
+    if (old->nitems < old->nalloc || p != old->items) {
         new = newarray(old->nitems, old->size);
         if (new == NULL) {
             return old;
