@@ -13,6 +13,9 @@
 #define arraylen(array)                                                       \
     (array->nitems)
 
+#define arraysize(array)                                                      \
+    (array->size * array->nalloc)
+
 
 typedef struct {
     u32     nitems;
@@ -28,5 +31,6 @@ u8      arrayadd(Array *, void *val);
 void    *arrayget(Array *, u32 index);
 u8      arrayset(Array *, u32 index, void *val);
 void    arraydel(Array *, u32 index);
+Array   *shrinkarray(Array *old);
 
 #endif /* _OAK_ARRAY_H_ */

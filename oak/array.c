@@ -153,3 +153,30 @@ arrayset(Array *array, u32 i, void *val)
 
     return OK;
 }
+
+
+Array *
+shrinkarray(Array *old)
+{
+    void   *items, *p;
+    Array  *new;
+
+    p = offset(old, sizeof(Array));
+    items = old->items;
+
+    if (old->nitems < old->nalloc || p != items) {
+        new = newarray(old->nitems, old->size);
+        if (new == NULL) {
+            return old;
+        }
+
+        memcpy(new->items, old->items, old->nitems * old->size);
+        new->nitems = old->nitems;
+
+        freearray(old);
+
+        return new;
+    }
+
+    return old;
+}
