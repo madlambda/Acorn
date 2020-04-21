@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "file.h"
+#include "array.h"
 #include "module.h"
 #include "test.h"
 
@@ -22,6 +23,7 @@ static const u8 call1typedata[] = {
     0x2, 0x60, 0x1, 0x7f, 0x0, 0x60, 0x0, 0x0
 };
 
+
 static const u8 call1impodata[] = {
     0x01, 0x07, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74,
     0x73, 0x0d, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74,
@@ -29,7 +31,9 @@ static const u8 call1impodata[] = {
     0x00
 };
 
+
 static const u8 call1funcdata[] = {0x01, 0x01};
+
 
 static const u8 call1expodata[] = {
     0x01, 0x0d, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
@@ -37,9 +41,11 @@ static const u8 call1expodata[] = {
     0x01,
 };
 
+
 static const u8 call1codedata[] = {
     0x01, 0x06, 0x00, 0x41, 0x2a, 0x10, 0x00, 0x0b,
 };
+
 
 static Section call1sects[] = {
     {1, 0x8, call1typedata},
@@ -50,26 +56,37 @@ static Section call1sects[] = {
 };
 
 
+static Array  emptyarray = {
+    .nitems = 0,
+    .items  = NULL,
+    .size   = sizeof(Section),
+};
+
+
+static Array  arraycall1 = {
+    .nitems = 5,
+    .items  = &call1sects,
+    .size   = sizeof(Section),
+};
+
+
 static const Testcase  invalid_cases[] = {
     {
         "testdata/invalid/notwasm",
         "WASM must have at least 8 bytes",
-        {NULL, 0, NULL, 0},
+        {NULL, 0, NULL},
     },
     {
         "testdata/ok/empty.wasm",
         NULL,
-        {NULL, 11, NULL, 0},
+        {NULL, 11, &emptyarray},
     },
     {
         "testdata/ok/call1.wasm",
         NULL,
-        {NULL, 1, call1sects, 5},
+        {NULL, 1, &arraycall1},
     }
 };
-
-
-#define nitems(a) (sizeof(a)/sizeof(a[0]))
 
 
 int main()
@@ -92,8 +109,6 @@ test_module(const Testcase *tc)
     u8      ret;
     Error   err;
     Module  *m;
-
-    err.msg = NULL;
 
     m = loadmodule(tc->filename, &err);
     if (m == NULL) {
@@ -118,7 +133,8 @@ test_module(const Testcase *tc)
 u8
 assertmodule(const Module *m1, const Module *m2)
 {
-    u16  i;
+    u16      i;
+    Section  *sect1, *sect2;
 
     if (m1 == m2) {
         return OK;
@@ -132,16 +148,23 @@ assertmodule(const Module *m1, const Module *m2)
         return error("version mismatch (%d != %d)", m1->version, m2->version);
     }
 
-    if (slow(m1->nsect != m2->nsect)) {
-        return error("nsections mismatch (%d != %d)", m1->nsect, m2->nsect);
-    }
-
     if (m1->sect == m2->sect) {
         return OK;
     }
 
-    for (i = 0; i < m1->nsect; i++) {
-        if (slow(assertsect(&m1->sect[i], &m2->sect[i]) != OK)) {
+    if (slow(m1->sect == NULL || m2->sect == NULL)) {
+        return error("sect mismatch (%p != %p)", m1->sect, m2->sect);
+    }
+
+    if (slow(arraylen(m1->sect) != arraylen(m2->sect))) {
+        return error("len(sects) mismatch (%d != %d)",
+                     arraylen(m1->sect), arraylen(m2->sect));
+    }
+
+    for (i = 0; i < arraylen(m1->sect); i++) {
+        sect1 = arrayget(m1->sect, i);
+        sect2 = arrayget(m2->sect, i);
+        if (slow(assertsect(sect1, sect2) != OK)) {
             return ERR;
         }
     }

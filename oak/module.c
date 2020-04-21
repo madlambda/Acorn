@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "file.h"
+#include "array.h"
 #include "module.h"
 #include "bin.h"
 
@@ -22,6 +23,8 @@ loadmodule(const char *filename, Error *err)
     u8      *begin, *end;
     File    *file;
     Module  *mod;
+
+    err->msg = NULL;
 
     file = openfile(filename, err);
     if (slow(file == NULL)) {
@@ -43,12 +46,17 @@ loadmodule(const char *filename, Error *err)
 
     begin += 4;
 
-    mod = zmalloc(sizeof(Module));
+    mod = malloc(sizeof(Module));
     if (slow(mod == NULL)) {
         goto fail;
     }
 
     mod->file = file;
+
+    mod->sect = newarray(16, sizeof(Section));
+    if (slow(mod->sect == NULL)) {
+        goto free;
+    }
 
     u32decode(begin, &mod->version);
     begin += 4;
@@ -73,22 +81,18 @@ fail:
 u8
 parsesects(Module *m, u8 *begin, const u8 *end, Error *err)
 {
-    Section s;
+    Section  sect;
 
     while (begin < end) {
-        begin = parsesect(begin, end, &s, err);
+        begin = parsesect(begin, end, &sect, err);
         if (slow(begin == NULL)) {
             return ERR;
         }
 
-        m->nsect++;
-        m->sect = realloc(m->sect, m->nsect * sizeof(Section));
-        if (slow(m->sect == NULL)) {
-            errset(err, "failed to realloc");
+        if (slow(arrayadd(m->sect, &sect) != OK)) {
+            errset(err, "failed to add section");
             return ERR;
         }
-
-        m->sect[m->nsect - 1] = s;
     }
 
     return OK;
@@ -129,10 +133,6 @@ void
 closemodule(Module *m)
 {
     closefile(m->file);
-
-    if (m->nsect > 0) {
-        free(m->sect);
-    }
-
+    freearray(m->sect);
     free(m);
 }

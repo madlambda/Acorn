@@ -14,11 +14,13 @@ LIBS=$(OBJDIR)/lib/libacorn.a
 SOURCES=test.c	 \
 		bin.c	 \
 		file.c   \
+		array.c  \
 		module.c \
 
 
 TEST_SOURCES=	bin_test.c \
-				module_test.c
+				module_test.c \
+				array_test.c
 
 
 # <file>.c => $OAK_OBJDIR/<file>.o
@@ -36,8 +38,11 @@ all: $(DIRS) $(TEST_PROGRAMS) tests
 tests: $(DIRS) $(TEST_PROGRAMS)
 	@for x in $(OAK_TESTDIR)/*_test; do \
 		$$x; 							\
+		testname=`basename $$x`;		\
 		if [ $$? = "0" ]; then 			\
-			echo "ok"; 					\
+			echo "$$testname: ok";	\
+		else							\
+			echo "$$testname: fail";\
 		fi; 							\
 	done
 

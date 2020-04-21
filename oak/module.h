@@ -29,8 +29,7 @@ typedef struct {
 typedef struct {
     File        *file;
     u32         version;
-    Section     *sect;
-    u16         nsect;
+    Array       *sect;      /* of Section */
 } Module;
 
 

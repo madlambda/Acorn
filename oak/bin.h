@@ -4,6 +4,7 @@
 
 
 #ifndef _OAK_BIN_H_
+#define _OAK_BIN_H_
 
 
 #define uencode(v, begin, end)      uleb128encode(v, begin, end)
