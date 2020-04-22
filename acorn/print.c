@@ -5,25 +5,30 @@
 
 #include <acorn.h>
 #include <stdarg.h>
-#include <stdio.h>
+#include <unistd.h>
+#include "string.h"
 
 
-char *
-sprint(char *start, char *end, const char *fmt, ...)
+void
+print(String *s, ...)
 {
-    int      n;
-    va_list  vl;
+    va_list  args;
 
-    va_start(vl, fmt);
-    n = vsnprintf(start, end - start, fmt, vl);
-    va_end(vl);
-
-    return start + n;
+    va_start(args, s);
+    vprint(s, args);
+    va_end(args);
 }
 
 
-char *
-vsprint(char *start, char *end, const char *fmt, va_list vl)
+void
+vprint(String *s, va_list args)
 {
-    return start + vsnprintf(start, end - start, fmt, vl);
+    String  *res;
+
+    res = vfmt(s, args);
+    if (slow(res == NULL)) {
+        return;
+    }
+
+    (void) write(1, res->start, res->len);
 }

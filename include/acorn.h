@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include "types.h"
+#include <acorn/types.h>
 
 
 #define DEBUG 1
@@ -52,10 +52,17 @@ typedef struct {
 } Error;
 
 
-void *copy(void *dst, const void *src, size_t n);
-void *zmalloc(size_t size);
-char *vsprint(char *start, char *end, const char *fmt, va_list vl);
-char *sprint(char *start, char *end, const char *fmt, ...);
+void    *copy(void *dst, const void *src, size_t n);
+void    *zmalloc(size_t size);
+char    *vsprint(char *start, char *end, const char *fmt, va_list vl);
+char    *sprint(char *start, char *end, const char *fmt, ...);
 
+
+#include <acorn/string.h>
+#include <acorn/fmt.h>
+
+
+void    print(String *s, ...);
+void    vprint(String *s, va_list args);
 
 #endif /* _ACORN_H_ */
