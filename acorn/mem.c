@@ -3,6 +3,7 @@
  */
 
 #include <acorn.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -14,4 +15,20 @@ copy(void *dst, const void *src, size_t n)
     p = memcpy(dst, src, n);
 
     return p + n;
+}
+
+
+void *
+zmalloc(size_t size)
+{
+    void  *ptr;
+
+    ptr = malloc(size);
+    if (slow(ptr == NULL)) {
+        return NULL;
+    }
+
+    memset(ptr, 0, size);
+
+    return ptr;
 }

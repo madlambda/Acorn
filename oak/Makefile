@@ -10,11 +10,14 @@ DIRS=$(OAK_OBJDIR) $(OAK_TESTDIR)
 LIBS=$(OBJDIR)/lib/libacorn.a
 
 
-SOURCES=test.c  \
-        bin.c   \
+SOURCES=test.c   \
+        bin.c    \
+        file.c   \
+        module.c \
 
 
-TEST_SOURCES=bin_test.c
+TEST_SOURCES=   bin_test.c \
+                module_test.c
 
 
 # <file>.c => $OAK_OBJDIR/<file>.o

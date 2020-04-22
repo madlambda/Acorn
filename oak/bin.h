@@ -17,5 +17,6 @@ ssize_t sleb128encode(i64 v, u8 *begin, u8 *end);
 ssize_t uleb128decode(const u8 *begin, const u8 *end, u64 *res);
 ssize_t sleb128decode(const u8 *begin, const u8 *end, i64 *res);
 
+void u32decode(const u8 *data, u32 *val);
 
 #endif /* _OAK_BIN_H_ */
