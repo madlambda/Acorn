@@ -144,8 +144,6 @@ vfmtbuf(String *buf, String *sfmt, va_list args)
 
     err = NULL;
 
-    memcpy(verberr, Einvalidverb, sizeof(Einvalidverb));
-
     format = sfmt->start;
     end = offset(format, sfmt->len);
 
@@ -207,6 +205,7 @@ vfmtbuf(String *buf, String *sfmt, va_list args)
 
         default:
 
+            memcpy(verberr, Einvalidverb, sizeof(Einvalidverb));
             err = verberr;
             err[slength(verberr) - 1] = *format;
 
@@ -225,6 +224,8 @@ fmtfail:
             if (slow(buf == NULL)) {
                 return NULL;
             }
+
+            err = NULL;
 
             format++;
             continue;
