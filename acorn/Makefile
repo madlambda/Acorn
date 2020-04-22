@@ -24,14 +24,14 @@ all: $(DIRS) $(TEST_PROGRAMS) $(TARGET) tests
 
 
 tests: $(DIRS) $(TEST_PROGRAMS)
-	@for x in $(ACORN_TESTDIR)/*_test; do   \
-        $$x;                                \
-        if [ $$? = "0" ]; then              \
-            echo "ok";                      \
-        else                                \
-            echo "fail"; exit 1;            \
-        fi;                                 \
-    done
+	@for x in $(ACORN_TESTDIR)/*_test; do       \
+                $$x;                                \
+                if [ $$? = "0" ]; then              \
+                        echo "ok";                  \
+                else                                \
+                        echo "fail"; exit 1;        \
+                fi;                                 \
+        done
 
 
 $(ACORN_OBJDIR):
