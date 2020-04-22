@@ -2,8 +2,8 @@
  * Copyright (C) Madlambda Authors
  */
 
-#ifndef _OAK_STRING_H_
-#define _OAK_STRING_H_
+#ifndef _ACORN_STRING_H_
+#define _ACORN_STRING_H_
 
 
 #define offset(p, offset)                                                     \
@@ -45,4 +45,4 @@ String *    appendc(String *, u32 nargs, ...);
 String *    appendcstr(String *, const char *str);
 
 
-#endif /* _OAK_STRING_H_ */
+#endif /* _ACORN_STRING_H_ */

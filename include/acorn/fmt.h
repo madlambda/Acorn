@@ -2,8 +2,8 @@
  * Copyright (C) Madlambda Authors
  */
 
-#ifndef _OAK_FMT_H_
-#define _OAK_FMT_H_
+#ifndef _ACORN_FMT_H_
+#define _ACORN_FMT_H_
 
 
 String  *fmt(String *format, ...);
@@ -12,4 +12,4 @@ String  *cfmt(const char *format, ...);
 String  *cvfmt(const char *format, va_list args);
 
 
-#endif /* _OAK_FMT_H_ */
+#endif /* _ACORN_FMT_H_ */
