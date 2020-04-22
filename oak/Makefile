@@ -7,15 +7,14 @@ include ../common.mk
 OAK_OBJDIR=$(OBJDIR)/oak
 OAK_TESTDIR=$(OAK_OBJDIR)/tests
 DIRS=$(OAK_OBJDIR) $(OAK_TESTDIR)
-INCLUDES=-I.
 LIBS=$(OBJDIR)/lib/libacorn.a
 
 
-SOURCES=test.c	 \
-		bin.c	 \
-		file.c   \
-		array.c  \
-		module.c \
+SOURCES=test.c   \
+        bin.c    \
+        file.c   \
+        array.c  \
+        module.c \
 
 
 TEST_SOURCES=	bin_test.c \
@@ -40,9 +39,9 @@ tests: $(DIRS) $(TEST_PROGRAMS)
 		$$x; 							\
 		testname=`basename $$x`;		\
 		if [ $$? = "0" ]; then 			\
-			echo "$$testname: ok";	\
+			echo "$$testname: ok";      \
 		else							\
-			echo "$$testname: fail";\
+			echo "$$testname: fail";    \
 		fi; 							\
 	done
 
@@ -56,11 +55,11 @@ $(OAK_TESTDIR):
 
 
 $(OAK_OBJDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test.o: %_test.c
-	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test: $(OAK_TESTDIR)/%_test.o $(OBJECTS)
