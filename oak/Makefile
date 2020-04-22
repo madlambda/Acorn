@@ -10,8 +10,8 @@ DIRS=$(OAK_OBJDIR) $(OAK_TESTDIR)
 LIBS=$(OBJDIR)/lib/libacorn.a
 
 
-SOURCES=test.c	\
-		bin.c	\
+SOURCES=test.c  \
+        bin.c   \
 
 
 TEST_SOURCES=bin_test.c
@@ -31,11 +31,11 @@ all: $(DIRS) $(TEST_PROGRAMS) tests
 
 tests: $(DIRS) $(TEST_PROGRAMS)
 	@for x in $(OAK_TESTDIR)/*_test; do \
-		$$x; 							\
-		if [ $$? = "0" ]; then 			\
-			echo "ok"; 					\
-		fi; 							\
-	done
+        $$x;                            \
+        if [ $$? = "0" ]; then          \
+            echo "ok";                  \
+        fi;                             \
+    done
 
 
 $(OAK_OBJDIR):
