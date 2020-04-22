@@ -17,9 +17,9 @@ SOURCES=test.c   \
         module.c \
 
 
-TEST_SOURCES=	bin_test.c \
-				module_test.c \
-				array_test.c
+TEST_SOURCES=   bin_test.c    \
+                module_test.c \
+                array_test.c
 
 
 # <file>.c => $OAK_OBJDIR/<file>.o
