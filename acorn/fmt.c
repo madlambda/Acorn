@@ -3,8 +3,6 @@
  */
 
 #include <acorn.h>
-#include <acorn/string.h>
-
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>

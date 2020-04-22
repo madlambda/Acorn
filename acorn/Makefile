@@ -4,10 +4,10 @@ ACORN_OBJDIR=$(OBJDIR)/acorn
 ACORN_TESTDIR=$(ACORN_OBJDIR)/tests
 DIRS=$(ACORN_OBJDIR) $(ACORN_TESTDIR)
 
-SOURCES=	mem.c 		\
-			string.c 	\
-			fmt.c 		\
-			print.c 	\
+SOURCES=mem.c       \
+        string.c    \
+        fmt.c       \
+        print.c     \
 
 TEST_SOURCES=string_test.c fmt_test.c
 
@@ -24,13 +24,13 @@ all: $(DIRS) $(TEST_PROGRAMS) $(TARGET) tests
 
 
 tests: $(DIRS) $(TEST_PROGRAMS)
-	@for x in $(ACORN_TESTDIR)/*_test; do 	\
-		$$x; 								\
-		if [ $$? = "0" ]; then 				\
-			echo "ok"; 						\
-		else								\
-			echo "fail"; exit 1;			\
-		fi; 								\
+	@for x in $(ACORN_TESTDIR)/*_test; do   \
+		$$x;                                \
+		if [ $$? = "0" ]; then              \
+			echo "ok";                      \
+		else                                \
+			echo "fail"; exit 1;            \
+		fi;                                 \
 	done
 
 
