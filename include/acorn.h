@@ -27,8 +27,14 @@
     __builtin_expect((long) (expr), 1)
 
 
+#define offset(p, offset)                                                     \
+    ((void *) ((u8 *) (p) + (offset)))
+
 #define slength(val)                                                          \
     (sizeof(val) - 1)
+
+
+#define nitems(a) (sizeof(a)/sizeof(a[0]))
 
 
 #if (DEBUG)
