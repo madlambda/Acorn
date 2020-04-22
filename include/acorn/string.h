@@ -30,6 +30,14 @@
     } while (0)
 
 
+#define len(s)                                                                \
+    (s->len)
+
+
+#define strnalloc(s)                                                          \
+    (s->nalloc)
+
+
 typedef struct {
     u8      *start;
     u32     len;
