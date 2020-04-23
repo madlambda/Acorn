@@ -119,6 +119,8 @@ parsesects(Module *m, u8 *begin, const u8 *end, Error *err)
     Section  sect;
 
     while (begin < end) {
+        memset(&sect, 0, sizeof(Section));
+
         if (slow(parsesect(&begin, end, &sect, err) != OK)) {
             return ERR;
         }
