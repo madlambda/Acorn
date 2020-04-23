@@ -35,27 +35,27 @@ static Section call1data[] = {
 };
 
 
-static TypeId  call1params[] = {I32};
+static Type  call1params[] = {I32};
 
 
 static Array call1typeparams1 = {
-    .nitems = 1,
+    .len    = 1,
     .items  = &call1params,
-    .size   = sizeof(TypeId),
+    .size   = sizeof(Type),
 };
 
 
 static Array call1typeparams2 = {
-    .nitems = 0,
+    .len    = 0,
     .items  = NULL,
-    .size   = sizeof(TypeId),
+    .size   = sizeof(Type),
 };
 
 
 static Array call1typerets = {
-    .nitems = 0,
+    .len    = 0,
     .items  = NULL,
-    .size   = sizeof(TypeId),
+    .size   = sizeof(Type),
 };
 
 
@@ -66,14 +66,14 @@ static FuncDecl call1funcvals[] = {
 
 
 static Array  call1sects = {
-    .nitems = 5,
+    .len    = 5,
     .items  = &call1data,
     .size   = sizeof(Section),
 };
 
 
 static Array  call1funcs = {
-    .nitems = 2,
+    .len    = 2,
     .items  = &call1funcvals,
     .size   = sizeof(FuncDecl),
 };
@@ -82,5 +82,5 @@ static Array  call1funcs = {
 static Module  call1mod = {
     .version = 1,
     .sects   = &call1sects,
-    .funcs   = &call1funcs,
+    .types   = &call1funcs,
 };

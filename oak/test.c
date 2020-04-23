@@ -35,24 +35,41 @@ mustalloc(size_t size)
 u8
 error(const char *fmt, ...)
 {
-    char     *p, *end;
-    va_list  vl;
-    char     err[OAK_MAX_ERR_MSG];
+    String   *err, *res;
+    va_list  args;
 
-    static const char  prefix[] = "[error] ";
+    va_start(args, fmt);
+    err = cvfmt(fmt, args);
+    va_end(args);
 
-    end = err + OAK_MAX_ERR_MSG - 2;
+    if (slow(err == NULL)) {
+        return ERR;
+    }
 
-    p = copy(err, prefix, slength(prefix));
+    res = newcstring("[error] ");
+    if (slow(res == NULL)) {
+        goto fail;
+    }
 
-    va_start(vl, fmt);
-    p = vsprint(p, end, fmt, vl);
-    va_end(vl);
+    res = append(res, err);
+    if (slow(res == NULL)) {
+        goto fail;
+    }
 
-    *p++ = '\n';
-    *p = '\0';
+    res = appendc(res, 1, '\n');
+    if (slow(res == NULL)) {
+        goto fail;
+    }
 
-    printf("%s", err);
+    print(res);
 
+    free(err);
+    free(res);
+
+    return ERR;
+
+fail:
+
+    free(err);
     return ERR;
 }

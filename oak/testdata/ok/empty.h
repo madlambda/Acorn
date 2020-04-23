@@ -1,8 +1,8 @@
 
 static Array  emptyarray = {
-    .nitems = 0,
-    .items  = NULL,
-    .size   = sizeof(Section),
+    .len     = 0,
+    .items   = NULL,
+    .size    = sizeof(Section),
 };
 
 

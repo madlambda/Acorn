@@ -19,7 +19,7 @@ typedef struct {
 static u8 test_module(const Testcase *tc);
 static u8 assertmodule(const Module *m1, const Module *m2);
 static u8 assertsect(Section *s1, Section *s2);
-static u8 assertfuncdecl(FuncDecl *f1, FuncDecl *f2);
+static u8 asserttypedecl(FuncDecl *f1, FuncDecl *f2);
 
 
 static const Testcase  invalid_cases[] = {
@@ -87,7 +87,7 @@ assertmodule(const Module *m1, const Module *m2)
 {
     u16       i;
     Section   *sect1, *sect2;
-    FuncDecl  *func1, *func2;
+    FuncDecl  *type1, *type2;
 
     if (m1 == m2) {
         return OK;
@@ -106,12 +106,12 @@ assertmodule(const Module *m1, const Module *m2)
             return error("sect mismatch (%p != %p)", m1->sects, m2->sects);
         }
 
-        if (slow(arraylen(m1->sects) != arraylen(m2->sects))) {
+        if (slow(len(m1->sects) != len(m2->sects))) {
             return error("len(sects) mismatch (%d != %d)",
-                        arraylen(m1->sects), arraylen(m2->sects));
+                        len(m1->sects), len(m2->sects));
         }
 
-        for (i = 0; i < arraylen(m1->sects); i++) {
+        for (i = 0; i < len(m1->sects); i++) {
             sect1 = arrayget(m1->sects, i);
             sect2 = arrayget(m2->sects, i);
             if (slow(assertsect(sect1, sect2) != OK)) {
@@ -120,20 +120,20 @@ assertmodule(const Module *m1, const Module *m2)
         }
     }
 
-    if (m1->funcs != m2->funcs) {
-        if (slow(m1->funcs == NULL || m2->funcs == NULL)) {
-            return error("funcs mismatch (%p != %p)", m1->funcs, m2->funcs);
+    if (m1->types != m2->types) {
+        if (slow(m1->types == NULL || m2->types == NULL)) {
+            return error("types mismatch (%p != %p)", m1->types, m2->types);
         }
 
-        if (slow(arraylen(m1->funcs) != arraylen(m2->funcs))) {
-            return error("func len mismatch (%u != %u)",
-                         arraylen(m1->funcs), arraylen(m2->funcs));
+        if (slow(len(m1->types) != len(m2->types))) {
+            return error("types len mismatch (%d != %d)",
+                         len(m1->types), len(m2->types));
         }
 
-        for (i = 0; i < arraylen(m1->funcs); i++) {
-            func1 = arrayget(m1->funcs, i);
-            func2 = arrayget(m2->funcs, i);
-            if (slow(assertfuncdecl(func1, func2) != OK)) {
+        for (i = 0; i < len(m1->types); i++) {
+            type1 = arrayget(m1->types, i);
+            type2 = arrayget(m2->types, i);
+            if (slow(asserttypedecl(type1, type2) != OK)) {
                 return ERR;
             }
         }
@@ -162,10 +162,10 @@ assertsect(Section *s1, Section *s2) {
 
 
 static u8
-assertfuncdecl(FuncDecl *f1, FuncDecl *f2)
+asserttypedecl(FuncDecl *f1, FuncDecl *f2)
 {
-    u32     i;
-    TypeId  *p1, *p2;
+    u32   i;
+    Type  *p1, *p2;
 
     if (slow(f1->form != f2->form)) {
         return error("funcdecl form mismatch (%x != %x)", f1->form, f2->form);
@@ -177,12 +177,12 @@ assertfuncdecl(FuncDecl *f1, FuncDecl *f2)
                          f1->params, f2->params);
         }
 
-        if (slow(arraylen(f1->params) != arraylen(f2->params))) {
+        if (slow(len(f1->params) != len(f2->params))) {
             return error("funcdecl param count mismatch (%u != %u)",
-                         arraylen(f1->params), arraylen(f2->params));
+                         len(f1->params), len(f2->params));
         }
 
-        for (i = 0; i < arraylen(f1->params); i++) {
+        for (i = 0; i < len(f1->params); i++) {
             p1 = arrayget(f1->params, i);
             p2 = arrayget(f2->params, i);
 
@@ -200,12 +200,12 @@ assertfuncdecl(FuncDecl *f1, FuncDecl *f2)
                          f1->rets, f2->rets);
         }
 
-        if (slow(arraylen(f1->rets) != arraylen(f2->rets))) {
+        if (slow(len(f1->rets) != len(f2->rets))) {
             return error("funcdecl return count mismatch (%u != %u)",
-                         arraylen(f1->rets), arraylen(f2->rets));
+                         len(f1->rets), len(f2->rets));
         }
 
-        for (i = 0; i < arraylen(f1->rets); i++) {
+        for (i = 0; i < len(f1->rets); i++) {
             p1 = arrayget(f1->rets, i);
             p2 = arrayget(f2->rets, i);
 

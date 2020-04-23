@@ -8,17 +8,15 @@
 
 
 #define arraylast(array)                                                      \
-    offset((array)->items, (array)->size * ((array)->nitems - 1))
+    offset((array)->items, (array)->size * ((array)->len - 1))
 
-#define arraylen(array)                                                       \
-    (array->nitems)
 
 #define arraysize(array)                                                      \
     (array->size * array->nalloc)
 
 
 typedef struct {
-    u32     nitems;
+    u32     len;
     u32     nalloc;
     size_t  size;
     void    *items;

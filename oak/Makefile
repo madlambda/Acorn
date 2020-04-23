@@ -7,20 +7,19 @@ include ../common.mk
 OAK_OBJDIR=$(OBJDIR)/oak
 OAK_TESTDIR=$(OAK_OBJDIR)/tests
 DIRS=$(OAK_OBJDIR) $(OAK_TESTDIR)
-INCLUDES=-I.
 LIBS=$(OBJDIR)/lib/libacorn.a
 
 
-SOURCES=test.c	 \
-		bin.c	 \
-		file.c   \
-		array.c  \
-		module.c \
+SOURCES=test.c   \
+        bin.c    \
+        file.c   \
+        array.c  \
+        module.c \
 
 
-TEST_SOURCES=	bin_test.c \
-				module_test.c \
-				array_test.c
+TEST_SOURCES=   bin_test.c    \
+                module_test.c \
+                array_test.c
 
 
 # <file>.c => $OAK_OBJDIR/<file>.o
@@ -36,15 +35,15 @@ all: $(DIRS) $(TEST_PROGRAMS) tests
 
 
 tests: $(DIRS) $(TEST_PROGRAMS)
-	@for x in $(OAK_TESTDIR)/*_test; do \
-		$$x; 							\
-		testname=`basename $$x`;		\
-		if [ $$? = "0" ]; then 			\
-			echo "$$testname: ok";	\
-		else							\
-			echo "$$testname: fail";\
-		fi; 							\
-	done
+	@for x in $(OAK_TESTDIR)/*_test; do          \
+            $$x;                                 \
+            testname=`basename $$x`;             \
+            if [ $$? = "0" ]; then               \
+                echo "$$testname: ok";           \
+            else                                 \
+                echo "$$testname: fail"; exit 1; \
+            fi;                                  \
+    done
 
 
 $(OAK_OBJDIR):
@@ -56,11 +55,11 @@ $(OAK_TESTDIR):
 
 
 $(OAK_OBJDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test.o: %_test.c
-	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test: $(OAK_TESTDIR)/%_test.o $(OBJECTS)
