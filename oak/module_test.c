@@ -7,6 +7,7 @@
 #include "test.h"
 #include "testdata/ok/empty.h"
 #include "testdata/ok/call1.h"
+#include "testdata/ok/globalconstant.h"
 
 
 typedef struct {
@@ -51,7 +52,12 @@ static const Testcase  invalid_cases[] = {
         "testdata/ok/call1.wasm",
         NULL,
         &call1mod,
-    }
+    },
+    {
+        "testdata/ok/globalconstant.wasm",
+        NULL,
+        &globalconstmod,
+    },
 };
 
 
@@ -192,21 +198,34 @@ assertarray(Array *got, Array *want, const char *name, Assertion assertion)
 
 
 static u8
-assertsect(const void *got, const void *want) {
-    const Section  *s1, *s2;
+assertsect(const void *gotv, const void *wantv) {
+    u32            i;
+    const Section  *got, *want;
 
-    s1 = got;
-    s2 = want;
+    got = gotv;
+    want = wantv;
 
-    if (slow(s1->id != s2->id)) {
-        return error("section id mismatch (%x != %x)", s1->id, s2->id);
+    if (slow(got->id != want->id)) {
+        return error("section id mismatch (%d != %d) (%d %d)", got->id, want->id, got->len, want->len);
     }
 
-    if (slow(s1->len != s2->len)) {
-        return error("section len mismatch (%d != %d)", s1->len, s2->len);
+    if (slow(got->len != want->len)) {
+        return error("section len mismatch (%d != %d)", got->len, want->len);
     }
 
-    if (slow(memcmp(s1->data, s2->data, s1->len) != 0)) {
+    if (slow(memcmp(got->data, want->data, got->len) != 0)) {
+        printf("got: ");
+        for (i = 0; i < got->len; i++) {
+            printf("%02x ", got->data[i]);
+        }
+
+        printf("\nwant: ");
+        for (i = 0; i < want->len; i++) {
+            printf("%02x ", want->data[i]);
+        }
+
+        puts("");
+
         return error("section data mismatch");
     }
 
@@ -367,9 +386,9 @@ assertglobaldecl(const void *gotv, const void *wantv)
                      got->type.mut, want->type.mut);
     }
 
-    if (slow(got->u.f64val != want->u.f64val)) {
-        return error("global init data mismatch (%u != %u)",
-                     got->u.f64val != want->u.f64val);
+    if (slow(got->u.i32val != want->u.i32val)) {
+        return error("global init data mismatch (%d != %d)",
+                     got->u.i32val != want->u.i32val);
     }
 
     return OK;
