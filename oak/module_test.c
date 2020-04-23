@@ -428,7 +428,7 @@ assertcodedecl(const void *gotv, const void *wantv)
         return error("code section size mismatch (%d != %d)", gotsize, wantsize);
     }
 
-    if (slow(memcmp(got->start, want->start, wantsize != 0))) {
+    if (slow(memcmp(got->start, want->start, wantsize) != 0)) {
         return error("code data mismatch");
     }
 
