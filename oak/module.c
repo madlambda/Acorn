@@ -30,8 +30,8 @@ static u8 parseglobals(Module *m, u8 *begin, const u8 *end, Error *err);
 static u8 parseexports(Module *m, u8 *begin, const u8 *end, Error *err);
 static u8 parsestarts(Module *m, u8 *begin, const u8 *end, Error *err);
 static u8 parseelements(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsecode(Module *m, u8 *begin, const u8 *end, Error *err);
-//static u8 parsedata(Module *m, u8 *begin, const u8 *end, Error *err);
+static u8 parsecodes(Module *m, u8 *begin, const u8 *end, Error *err);
+static u8 parsedatas(Module *m, u8 *begin, const u8 *end, Error *err);
 
 static u8 parselimits(u8 **begin, const u8 *end, ResizableLimit *limit,
     Error *err);
@@ -48,7 +48,8 @@ static const Parser  parsers[] = {
     parseexports,
     parsestarts,
     parseelements,
-    parsecode,
+    parsecodes,
+    parsedatas,
 };
 
 
@@ -688,7 +689,7 @@ parsestarts(Module *m, u8 *begin, const u8 *end, Error *err)
 
 
 static u8
-parsecode(Module *m, u8 *begin, const u8 *end, Error *err)
+parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
 {
     i8          i8val;
     u8          *bodybegin, *bodyend;
@@ -812,6 +813,74 @@ parselimits(u8 **begin, const u8 *end, ResizableLimit *limit, Error *err)
              u32vdecode(begin, end, &limit->maximum) != OK))
     {
         errset(err, "malformed binary");
+        return ERR;
+    }
+
+    return OK;
+}
+
+
+static u8
+parsedatas(Module *m, u8 *begin, const u8 *end, Error *err)
+{
+    u8        opcode;
+    u32       count;
+    DataDecl  data;
+
+    if (slow(m->datas != NULL)) {
+        errset(err, "multiple data sections");
+        return  ERR;
+    }
+
+    if (slow(u32vdecode(&begin, end, &count) != OK)) {
+        errset(err, "failed to get count from data section");
+        return ERR;
+    }
+
+    m->datas = newarray(count, sizeof(DataDecl));
+    if (slow(m->datas == NULL)) {
+        errset(err, "failed to create array");
+        return ERR;
+    }
+
+    while (len(m->datas) < count && begin < end) {
+        memset(&data, 0, sizeof(DataDecl));
+
+        if (slow(u32vdecode(&begin, end, &data.index) != OK)) {
+            errset(err, "failed to get data index");
+            return ERR;
+        }
+
+        opcode = *begin++;
+
+        switch (opcode) {
+        case Opi32const:
+            if (slow(s32vdecode(&begin, end, &data.offset) != OK)) {
+                errset(err, "failed to parse i32.const value");
+                return ERR;
+            }
+            break;
+
+        default:
+            errset(err, "unsupported data init expression");
+            return ERR;
+        }
+
+        if (slow(u32vdecode(&begin, end, &data.size) != OK)) {
+            errset(err, "failed to parse data size");
+            return ERR;
+        }
+
+        data.data = begin;
+
+        if (slow(arrayadd(m->datas, &data) != OK)) {
+            errset(err, "failed to add data array");
+            return ERR;
+        }
+    }
+
+    if (slow(len(m->datas) < count)) {
+        errset(err, "not all data parsed");
         return ERR;
     }
 

@@ -180,4 +180,5 @@ static Module  call1mod = {
     .exports    = &call1exports,
     .start      = 0,
     .codes      = &call1codes,
+    .datas      = NULL,
 };

@@ -123,6 +123,14 @@ typedef struct {
 
 
 typedef struct {
+    u32             index;
+    i32             offset;
+    u32             size;
+    const u8        *data;
+} DataDecl;
+
+
+typedef struct {
     File            *file;
     u32             version;
     u32             start;      /* function index */
@@ -135,6 +143,7 @@ typedef struct {
     Array           *globals;   /* of GlobalDecl */
     Array           *exports;   /* of ExportDecl */
     Array           *codes;     /* of CodeDecl */
+    Array           *datas;     /* of DataDecl */
 } Module;
 
 
