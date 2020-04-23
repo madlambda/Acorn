@@ -31,7 +31,12 @@ vprint(String *format, va_list args)
         return;
     }
 
-    (void) write(1, res->start, res->len);
+    /*
+     * We don't need to check the result here but there's no portable way
+     * of doing that and still having all the warnings on.
+     * The ugly thing below is the last resort.
+     */
+    (void)(write(1, res->start, res->len) + 1);
 
     free(res);
 }

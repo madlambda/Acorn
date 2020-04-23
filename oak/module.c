@@ -31,6 +31,7 @@ static u8 parseexports(Module *m, u8 *begin, const u8 *end, Error *err);
 static u8 parsestarts(Module *m, u8 *begin, const u8 *end, Error *err);
 static u8 parseelements(Module *m, u8 *begin, const u8 *end, Error *err);
 static u8 parsecode(Module *m, u8 *begin, const u8 *end, Error *err);
+//static u8 parsedata(Module *m, u8 *begin, const u8 *end, Error *err);
 
 static u8 parselimits(u8 **begin, const u8 *end, ResizableLimit *limit,
     Error *err);
@@ -711,6 +712,8 @@ parsecode(Module *m, u8 *begin, const u8 *end, Error *err)
         return ERR;
     }
 
+    bodyend = 0;
+
     while (len(m->codes) < count && begin < end) {
         bodybegin = begin;
 
@@ -779,7 +782,7 @@ parsecode(Module *m, u8 *begin, const u8 *end, Error *err)
         return ERR;
     }
 
-    if (slow((end - bodyend) != 1)) {
+    if (slow(count > 0 && (end - bodyend) != 1)) {
         errset(err, "surplus bytes in the end of code section");
         return ERR;
     }

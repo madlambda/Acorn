@@ -10,11 +10,11 @@
 void *
 copy(void *dst, const void *src, size_t n)
 {
-    void  *p;
+    ptr  p;
 
-    p = memcpy(dst, src, n);
+    p = (ptr) memcpy(dst, src, n);
 
-    return p + n;
+    return (void *) (p + n);
 }
 
 
