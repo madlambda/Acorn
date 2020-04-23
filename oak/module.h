@@ -58,7 +58,7 @@ typedef struct {
 typedef struct {
     Type            form;
     Array           *params;    /* of Type */
-    Array           *rets;      /* of Types*/
+    Array           *rets;      /* of Type */
 } FuncDecl;
 
 
@@ -116,7 +116,7 @@ typedef struct {
 
 
 typedef struct {
-    Array           *locals;
+    Array           *locals;     /* of LocalEntry */
     const u8        *start;      /* pointer to file offset */
     const u8        *end;
 } CodeDecl;

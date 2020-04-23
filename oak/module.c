@@ -777,6 +777,11 @@ parsecode(Module *m, u8 *begin, const u8 *end, Error *err)
         return ERR;
     }
 
+    if (slow((end - bodyend) != 1)) {
+        errset(err, "surplus bytes in the end of code section");
+        return ERR;
+    }
+
     return OK;
 }
 
