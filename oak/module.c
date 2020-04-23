@@ -312,7 +312,7 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
             return ERR;
         }
 
-        (void *) strset(import.module, begin, u32val);
+        strset(import.module, begin, u32val);
 
         begin += u32val;
 
@@ -327,7 +327,7 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
             return ERR;
         }
 
-        (void *) strset(import.field, begin, u32val);
+        strset(import.field, begin, u32val);
 
         begin += u32val;
 
