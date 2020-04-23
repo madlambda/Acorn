@@ -36,9 +36,9 @@ all: $(DIRS) $(TEST_PROGRAMS) tests
 
 tests: $(DIRS) $(TEST_PROGRAMS)
 	@for x in $(OAK_TESTDIR)/*_test; do          \
+			testname=`basename $$x`;             \
             $$x;                                 \
-            testname=`basename $$x`;             \
-            if [ $$? = "0" ]; then               \
+            if [ "$$?" = "0" ]; then             \
                 echo "$$testname: ok";           \
             else                                 \
                 echo "$$testname: fail"; exit 1; \
