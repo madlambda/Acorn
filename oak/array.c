@@ -28,7 +28,7 @@ newarray(u32 n, size_t size)
         return NULL;
     }
 
-    array->nitems = 0;
+    array->len = 0;
     array->nalloc = n;
     array->size = size;
     array->items = offset(array, sizeof(Array));
@@ -56,16 +56,16 @@ arrayadd(Array *array, void *val)
 {
     void  *p;
 
-    if (array->nitems == array->nalloc) {
+    if (array->len == array->nalloc) {
         if (slow(grow(array) != OK)) {
             return ERR;
         }
     }
 
-    p = offset(array->items, array->size * array->nitems);
+    p = offset(array->items, array->size * array->len);
     memcpy(p, val, array->size);
 
-    array->nitems++;
+    array->len++;
 
     return OK;
 }
@@ -79,7 +79,7 @@ grow(Array *array)
 
     nalloc = array->nalloc;
 
-    if (array->nitems < 16) {
+    if (array->len < 16) {
         newalloc = 1 + 2*nalloc;
     } else {
         newalloc = 1 + nalloc + nalloc/2;
@@ -93,7 +93,7 @@ grow(Array *array)
     }
 
     array->nalloc = newalloc;
-    memcpy(array->items, p, array->size * array->nitems);
+    memcpy(array->items, p, array->size * array->len);
 
     p2 = offset(array, sizeof(Array));
     if (p != p2) {
@@ -110,27 +110,27 @@ arraydel(Array *array, u32 i)
 {
     void  *target, *next;
 
-    if (slow(i > array->nitems)) {
+    if (slow(i > array->len)) {
         return;
     }
 
-    if (i == (array->nitems - 1)) {
-        array->nitems--;
+    if (i == (array->len - 1)) {
+        array->len--;
         return;
     }
 
     target = offset(array->items, i * array->size);
     next = offset(array->items, (i + 1) * array->size);
-    memmove(target, next, (array->nitems - i) * array->size);
+    memmove(target, next, (array->len - i) * array->size);
 
-    array->nitems--;
+    array->len--;
 }
 
 
 void *
 arrayget(Array *array, u32 i)
 {
-    if (slow(i >= array->nitems)) {
+    if (slow(i >= array->len)) {
         return NULL;
     }
 
@@ -143,7 +143,7 @@ arrayset(Array *array, u32 i, void *val)
 {
     void  *p;
 
-    if (slow(i >= (array->nitems - 1))) {
+    if (slow(i >= (array->len - 1))) {
         return ERR;
     }
 
@@ -162,14 +162,14 @@ shrinkarray(Array *old)
 
     p = offset(old, sizeof(Array));
 
-    if (old->nitems < old->nalloc || p != old->items) {
-        new = newarray(old->nitems, old->size);
+    if (old->len < old->nalloc || p != old->items) {
+        new = newarray(old->len, old->size);
         if (new == NULL) {
             return old;
         }
 
-        memcpy(new->items, old->items, old->nitems * old->size);
-        new->nitems = old->nitems;
+        memcpy(new->items, old->items, old->len * old->size);
+        new->len = old->len;
 
         freearray(old);
 

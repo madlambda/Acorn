@@ -111,14 +111,45 @@ uleb128decode(const u8 *begin, const u8 *end, u64 *res)
         p++;
     } while(more && p < end && shift <= 64);
 
-    expect(p <= end);
-
     if (slow(more)) {
         /* malformed ULEB128 byte stream */
         return -1;
     }
 
     return (p - begin);
+}
+
+
+u8
+u8vdecode(u8 **begin, const u8 *end, u8 *val)
+{
+    u64      uval;
+    ssize_t  read;
+
+    read = uvdecode(*begin, end, &uval);
+    if (slow(read != 1)) {
+        return ERR;
+    }
+
+    *begin += 1;
+    *val = (u8) (uval & 0xff);
+    return OK;
+}
+
+u8
+u32vdecode(u8 **begin, const u8 *end, u32 *val)
+{
+    u64      uval;
+    ssize_t  read;
+
+    read = uvdecode(*begin, end, &uval);
+    if (slow(read <= 0 || read > 4)) {
+        return ERR;
+    }
+
+    *begin += read;
+    *val = (u32) uval;
+    return OK;
 }
 
 
@@ -153,11 +184,68 @@ sleb128decode(const u8 *begin, const u8 *end, i64 *res)
 }
 
 
-void
-u32decode(const u8 *data, u32 *val)
+u8
+s8vdecode(u8 **begin, const u8 *end, i8 *val)
 {
+    i64      ival;
+    ssize_t  read;
+
+    read = svdecode(*begin, end, &ival);
+    if (slow(read != 1)) {
+        return ERR;
+    }
+
+    *begin += 1;
+    *val = (i8) ival;
+    return OK;
+}
+
+
+u8
+s32vdecode(u8 **begin, const u8 *end, i32 *val)
+{
+    i64      ival;
+    ssize_t  read;
+
+    read = svdecode(*begin, end, &ival);
+    if (slow(read <= 0 || read > 4)) {
+        return ERR;
+    }
+
+    *begin += read;
+    *val = (i32) ival;
+    return OK;
+}
+
+
+u8
+s64vdecode(u8 **begin, const u8 *end, i64 *val)
+{
+    ssize_t  read;
+
+    read = svdecode(*begin, end, val);
+    if (slow(read <= 0 || read > 8)) {
+        return ERR;
+    }
+
+    *begin += read;
+    return OK;
+}
+
+
+u8
+u32decode(u8 **begin, const u8 *end, u32 *val)
+{
+    const u8  *data;
+    if (slow((end - *begin) < 4)) {
+        return ERR;
+    }
+    data = *begin;
     *val = (u32) data[0];
     *val |= ((u32) data[1]) << 8;
     *val |= ((u32) data[2]) << 16;
     *val |= ((u32) data[3]) << 24;
+
+    *begin += 4;
+    return OK;
 }

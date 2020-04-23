@@ -10,7 +10,7 @@
 #include "string.h"
 
 
-static String *grow(String *s);
+static String *grow(String *s, size_t size);
 static String *vappendc(String *s, u32 nargs, va_list args);
 
 
@@ -64,7 +64,7 @@ vappendc(String *s, u32 nargs, va_list args)
 
     for (i = 0; i < nargs; i++) {
         if (s->len == s->nalloc) {
-            s = grow(s);
+            s = grow(s, 0);
             if (slow(s == NULL)) {
                 return NULL;
             }
@@ -97,6 +97,10 @@ append(String *s, const String *other)
 {
     u32  i;
 
+    /*
+     * TODO(i4k): slow
+     */
+
     for (i = 0; i < other->len; i++) {
         s = appendc(s, 1, other->start[i]);
         if (slow(s == NULL)) {
@@ -122,13 +126,30 @@ appendcstr(String *s, const char *str)
 }
 
 
-static String *
-grow(String *s)
+String *
+strset(String *s, const u8 *val, size_t size)
 {
-    size_t  newsize;
+    if (s->nalloc < size) {
+        s = grow(s, size);
+        if (slow(s == NULL)) {
+            return NULL;
+        }
+    }
+
+    memcpy(s->start, val, size);
+    s->len = size;
+    return s;
+}
+
+
+static String *
+grow(String *s, size_t newsize)
+{
     String  *new;
 
-    newsize = 1 + s->nalloc + s->nalloc/2;
+    if (newsize == 0) {
+        newsize = 1 + s->nalloc + s->nalloc/2;
+    }
 
     new = allocstring(newsize);
     if (slow(new == NULL)) {

@@ -84,7 +84,7 @@ test_u8array()
             }
         }
 
-        if (slow(arraylen(arr) != tc->nitems)) {
+        if (slow(len(arr) != tc->nitems)) {
             return error("wrong number of elements");
         }
 
@@ -131,7 +131,7 @@ test_structarray()
     }
 
     sum = 0;
-    for (i = 0; i < arraylen(arr); i++) {
+    for (i = 0; i < len(arr); i++) {
         p = arrayget(arr, i);
         sum += p->a + p->b + p->c;
     }
@@ -164,7 +164,7 @@ test_arraydel()
 
     arraydel(arr, 0);
 
-    if (slow(arr->nitems != 0)) {
+    if (slow(len(arr) != 0)) {
         return error("arraydel() doesn't remove element");
     }
 
@@ -174,7 +174,7 @@ test_arraydel()
         }
     }
 
-    for (i = 0; i < arraylen(arr); i++) {
+    for (i = 0; i < len(arr); i++) {
         p = arrayget(arr, i);
 
         if (slow(i != *p)) {
@@ -184,7 +184,7 @@ test_arraydel()
 
     arraydel(arr, 5);
 
-    for (i = 0; i < arraylen(arr); i++) {
+    for (i = 0; i < len(arr); i++) {
         p = arrayget(arr, i);
 
         if (i < 5 && *p != i) {

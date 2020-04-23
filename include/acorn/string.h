@@ -19,6 +19,10 @@
     (s->len == strlen(cstr) ? memcmp(s->start, cstr, strlen(cstr)) == 0 : 0)
 
 
+#define newcstring(s)                                                         \
+    (newstring((const u8 *) (s), strlen(s)))
+
+
 #define str(s)                                                                \
     {.start = (u8 *) s, .len = slength(s)}
 
@@ -46,11 +50,12 @@ typedef struct {
 } String;
 
 
-String *    newstring(const u8 *from, size_t size);
-String *    allocstring(size_t size);
-String *    append(String *, const String *s);
-String *    appendc(String *, u32 nargs, ...);
-String *    appendcstr(String *, const char *str);
+String  *newstring(const u8 *from, size_t size);
+String  *allocstring(size_t size);
+String  *append(String *, const String *s);
+String  *appendc(String *, u32 nargs, ...);
+String  *appendcstr(String *, const char *str);
+String  *strset(String *s, const u8 *data, size_t size);
 
 
 #endif /* _ACORN_STRING_H_ */

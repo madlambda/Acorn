@@ -20,10 +20,10 @@ typedef struct {
 } STestcase;
 
 
-u8 test_uencode(u64 v, const u8 *want, u8 size);
-u8 test_udecode(const u8 *encoded, u8 size, u64 want);
-u8 test_sencode(i64 v, const u8 *want, u8 size);
-u8 test_sdecode(const u8 *encoded, u8 size, i64 want);
+u8 test_uvencode(u64 v, const u8 *want, u8 size);
+u8 test_uvdecode(const u8 *encoded, u8 size, u64 want);
+u8 test_svencode(i64 v, const u8 *want, u8 size);
+u8 test_svdecode(const u8 *encoded, u8 size, i64 want);
 u8 test_encodeoverflow();
 u8 test_decodemalformed();
 
@@ -158,12 +158,12 @@ int main() {
 
     for (i = 0; i < OAK_ULEB128_NTESTS; i++) {
         utc = &utestcases[i];
-        ret = test_uencode(utc->val, utc->want, utc->size);
+        ret = test_uvencode(utc->val, utc->want, utc->size);
         if (slow(ret != OK)) {
             exit(1);
         }
 
-        ret = test_udecode(utc->want, utc->size, utc->val);
+        ret = test_uvdecode(utc->want, utc->size, utc->val);
         if (slow(ret != OK)) {
             exit(1);
         }
@@ -171,12 +171,12 @@ int main() {
 
     for (i = 0; i < OAK_SLEB128_NTESTS; i++) {
         stc = &stestcases[i];
-        ret = test_sencode(stc->val, stc->want, stc->size);
+        ret = test_svencode(stc->val, stc->want, stc->size);
         if (slow(ret != OK)) {
             exit(1);
         }
 
-        ret = test_sdecode(stc->want, stc->size, stc->val);
+        ret = test_svdecode(stc->want, stc->size, stc->val);
         if (slow(ret != OK)) {
             exit(1);
         }
@@ -193,25 +193,25 @@ test_encodeoverflow()
 
     /* tests for writing past the buffer */
     end = buf;
-    n = uencode(100, buf, end);
+    n = uvencode(100, buf, end);
     if (slow(n != -1)) {
         return error("should have failed");
     }
 
     end = buf + 1;
-    n = uencode(0xfffffff, buf, end);
+    n = uvencode(0xfffffff, buf, end);
     if (slow(n != -1)) {
         return error("should have failed");
     }
 
     end = buf;
-    n = sencode(100, buf, end);
+    n = svencode(100, buf, end);
     if (slow(n != -1)) {
         return error("should have failed");
     }
 
     end = buf + 1;
-    n = sencode(0xfffffff, buf, end);
+    n = svencode(0xfffffff, buf, end);
     if (slow(n != -1)) {
         return error("should have failed");
     }
@@ -232,14 +232,14 @@ test_decodemalformed()
 
     end = continuationbit + 1;
 
-    n = udecode(continuationbit, end, &uval);
+    n = uvdecode(continuationbit, end, &uval);
     if (slow(n != -1)) {
         return error("want -1 but got %ld (%lu)", n, uval);
     }
 
     end = continuationbit2 + 1;
 
-    n = udecode(continuationbit2, end, &uval);
+    n = uvdecode(continuationbit2, end, &uval);
     if (slow(n != -1)) {
         return error("want -1 but got %ld (%lu)", n, uval);
     }
@@ -249,7 +249,7 @@ test_decodemalformed()
 
 
 u8
-test_uencode(u64 v, const u8 *want, u8 size)
+test_uvencode(u64 v, const u8 *want, u8 size)
 {
     u8   *got, *end, ret;
     int  i, n;
@@ -257,7 +257,7 @@ test_uencode(u64 v, const u8 *want, u8 size)
     got = mustalloc(size);
     end = got + size;
 
-    n = uencode(v, got, end);
+    n = uvencode(v, got, end);
 
     ret = ERR;
 
@@ -288,7 +288,7 @@ fail:
 
 
 u8
-test_udecode(const u8 *encoded, u8 size, u64 want)
+test_uvdecode(const u8 *encoded, u8 size, u64 want)
 {
     u64       got;
     ssize_t   got_size;
@@ -296,7 +296,7 @@ test_udecode(const u8 *encoded, u8 size, u64 want)
 
     end = encoded + size;
 
-    got_size = udecode(encoded, end, &got);
+    got_size = uvdecode(encoded, end, &got);
     if (slow((ssize_t) size != got_size)) {
         return error("decoding for %lu: read %d bytes but want %d", want,
                      got_size, size);
@@ -311,7 +311,7 @@ test_udecode(const u8 *encoded, u8 size, u64 want)
 
 
 u8
-test_sencode(i64 v, const u8 *want, u8 size)
+test_svencode(i64 v, const u8 *want, u8 size)
 {
     u8   *got, *end, ret;
     int  i, n;
@@ -319,7 +319,7 @@ test_sencode(i64 v, const u8 *want, u8 size)
     got = mustalloc(size);
     end = got + size;
 
-    n = sencode(v, got, end);
+    n = svencode(v, got, end);
 
     ret = ERR;
 
@@ -349,14 +349,14 @@ fail:
 
 
 u8
-test_sdecode(const u8 *encoded, u8 size, i64 want) {
+test_svdecode(const u8 *encoded, u8 size, i64 want) {
     i64       got;
     ssize_t   got_size;
     const u8  *end;
 
     end = encoded + size;
 
-    got_size = sdecode(encoded, end, &got);
+    got_size = svdecode(encoded, end, &got);
     if (slow((ssize_t) size != got_size)) {
         return error("decoding for %lld: read %d bytes but want %d", want,
                      got_size, size);

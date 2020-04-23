@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         COMPILER: [gcc, clang]
-        FLAGS: ["", "--debug"]
+        FLAGS: ["", "--debug", "--cc-opt=\"-O2\"", "--cc-opt=\"-O3\"", "--cc-opt=-pedantic"]
         os: [macos-latest, ubuntu-latest]
     steps:
     - uses: actions/checkout@v2

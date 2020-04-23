@@ -5,6 +5,7 @@
 
 #include <acorn.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "string.h"
 
@@ -21,14 +22,21 @@ print(String *s, ...)
 
 
 void
-vprint(String *s, va_list args)
+vprint(String *format, va_list args)
 {
     String  *res;
 
-    res = vfmt(s, args);
+    res = vfmt(format, args);
     if (slow(res == NULL)) {
         return;
     }
 
-    (void) write(1, res->start, res->len);
+    /*
+     * We don't need to check the result here but there's no portable way
+     * of doing that and still having all the warnings on.
+     * The ugly thing below is the last resort.
+     */
+    (void)(write(1, res->start, res->len) + 1);
+
+    free(res);
 }

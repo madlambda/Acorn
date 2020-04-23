@@ -5,87 +5,59 @@
 #include "array.h"
 #include "module.h"
 #include "test.h"
+#include "testdata/ok/empty.h"
+#include "testdata/ok/call1.h"
+#include "testdata/ok/globalconstant.h"
 
 
 typedef struct {
     const char  *filename;
     const char  *err;
-    Module      module;
+    Module      *module;
 } Testcase;
 
 
-u8 test_module(const Testcase *tc);
-u8 assertmodule(const Module *m1, const Module *m2);
-u8 assertsect(Section *s1, Section *s2);
+typedef u8 (*Assertion)(const void *got, const void *want);
 
 
-static const u8 call1typedata[] = {
-    0x2, 0x60, 0x1, 0x7f, 0x0, 0x60, 0x0, 0x0
-};
+static u8 test_module(const Testcase *tc);
+static u8 assertmodule(const Module *got, const Module *want);
+static u8 assertarray(Array *got, Array *want, const char *name, Assertion a);
 
-
-static const u8 call1impodata[] = {
-    0x01, 0x07, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74,
-    0x73, 0x0d, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74,
-    0x65, 0x64, 0x5f, 0x66, 0x75, 0x6e, 0x63, 0x00,
-    0x00
-};
-
-
-static const u8 call1funcdata[] = {0x01, 0x01};
-
-
-static const u8 call1expodata[] = {
-    0x01, 0x0d, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
-    0x65, 0x64, 0x5f, 0x66, 0x75, 0x6e, 0x63, 0x00,
-    0x01,
-};
-
-
-static const u8 call1codedata[] = {
-    0x01, 0x06, 0x00, 0x41, 0x2a, 0x10, 0x00, 0x0b,
-};
-
-
-static Section call1sects[] = {
-    {1, 0x8, call1typedata},
-    {2, 0x19, call1impodata},
-    {3, 2, call1funcdata},
-    {7, 0x11, call1expodata},
-    {10, 8, call1codedata},
-};
-
-
-static Array  emptyarray = {
-    .nitems = 0,
-    .items  = NULL,
-    .size   = sizeof(Section),
-};
-
-
-static Array  arraycall1 = {
-    .nitems = 5,
-    .items  = &call1sects,
-    .size   = sizeof(Section),
-};
+static u8 assertsect(const void *got, const void *want);
+static u8 asserttypedecl(const void *got, const void *want);
+static u8 asserttype(const void *got, const void *want);
+static u8 assertimportdecl(const void *got, const void *want);
+static u8 asserttabledecl(const void *got, const void *want);
+static u8 assertresizablelimit(const void *got, const void *want);
+static u8 assertmemorydecl(const void *got, const void *want);
+static u8 assertglobaldecl(const void *got, const void *want);
+static u8 assertexportdecl(const void *got, const void *want);
+static u8 assertcodedecl(const void *got, const void *want);
+static u8 assertlocaldecl(const void *gotv, const void *wantv);
 
 
 static const Testcase  invalid_cases[] = {
     {
         "testdata/invalid/notwasm",
         "WASM must have at least 8 bytes",
-        {NULL, 0, NULL},
+        NULL,
     },
     {
         "testdata/ok/empty.wasm",
         NULL,
-        {NULL, 11, &emptyarray},
+        &emptymod,
     },
     {
         "testdata/ok/call1.wasm",
         NULL,
-        {NULL, 1, &arraycall1},
-    }
+        &call1mod,
+    },
+    {
+        "testdata/ok/globalconstant.wasm",
+        NULL,
+        &globalconstmod,
+    },
 };
 
 
@@ -103,7 +75,7 @@ int main()
 }
 
 
-u8
+static u8
 test_module(const Testcase *tc)
 {
     u8      ret;
@@ -124,17 +96,16 @@ test_module(const Testcase *tc)
         return OK;
     }
 
-    ret = assertmodule(m, &tc->module);
+    ret = assertmodule(m, tc->module);
     closemodule(m);
     return ret;
 }
 
 
-u8
+static u8
 assertmodule(const Module *m1, const Module *m2)
 {
-    u16      i;
-    Section  *sect1, *sect2;
+    u8          ret;
 
     if (m1 == m2) {
         return OK;
@@ -148,24 +119,77 @@ assertmodule(const Module *m1, const Module *m2)
         return error("version mismatch (%d != %d)", m1->version, m2->version);
     }
 
-    if (m1->sect == m2->sect) {
-        return OK;
+    ret = assertarray(m1->sects, m2->sects, "sect", assertsect);
+    if (slow(ret != OK)) {
+        return ERR;
     }
 
-    if (slow(m1->sect == NULL || m2->sect == NULL)) {
-        return error("sect mismatch (%p != %p)", m1->sect, m2->sect);
+    ret = assertarray(m1->types, m2->types, "types", asserttypedecl);
+    if (slow(ret != OK)) {
+        return ERR;
     }
 
-    if (slow(arraylen(m1->sect) != arraylen(m2->sect))) {
-        return error("len(sects) mismatch (%d != %d)",
-                     arraylen(m1->sect), arraylen(m2->sect));
+    ret = assertarray(m1->imports, m2->imports, "imports", assertimportdecl);
+    if (slow(ret != OK)) {
+        return ERR;
     }
 
-    for (i = 0; i < arraylen(m1->sect); i++) {
-        sect1 = arrayget(m1->sect, i);
-        sect2 = arrayget(m2->sect, i);
-        if (slow(assertsect(sect1, sect2) != OK)) {
-            return ERR;
+    ret = assertarray(m1->funcs, m2->funcs, "funcs", asserttypedecl);
+    if (slow(ret != OK)) {
+        return ERR;
+    }
+
+    ret = assertarray(m1->tables, m2->tables, "tables", asserttabledecl);
+    if (slow(ret != OK)) {
+        return ERR;
+    }
+
+    ret = assertarray(m1->memories, m2->memories, "memories", assertmemorydecl);
+    if (slow(ret != OK)) {
+        return ERR;
+    }
+
+    ret = assertarray(m1->globals, m2->globals, "globals", assertglobaldecl);
+    if (slow(ret != OK)) {
+        return ret;
+    }
+
+    ret = assertarray(m1->exports, m2->exports, "exports", assertexportdecl);
+    if (slow(ret != OK)) {
+        return ret;
+    }
+
+    ret = assertarray(m1->codes, m2->codes, "codes", assertcodedecl);
+    if (slow(ret != OK)) {
+        return ret;
+    }
+
+    return OK;
+}
+
+
+static u8
+assertarray(Array *got, Array *want, const char *name, Assertion assertion)
+{
+    u32   i;
+    void  *p1, *p2;
+
+    if (got != want) {
+        if (slow(got == NULL || want == NULL)) {
+            return error("%s mismatch (%p != %p)", name, got, want);
+        }
+
+        if (slow(len(got) != len(want))) {
+            return error("%s len mismatch (%d != %d)", name,
+                         len(got), len(want));
+        }
+
+        for (i = 0; i < len(want); i++) {
+            p1 = arrayget(got, i);
+            p2 = arrayget(want, i);
+            if (slow(assertion(p1, p2) != OK)) {
+                return ERR;
+            }
         }
     }
 
@@ -173,19 +197,276 @@ assertmodule(const Module *m1, const Module *m2)
 }
 
 
-u8
-assertsect(Section *s1, Section *s2) {
-    if (slow(s1->id != s2->id)) {
-        return error("section id mismatch (%x != %x)", s1->id, s2->id);
+static u8
+assertsect(const void *gotv, const void *wantv) {
+    u32            i;
+    const Section  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(got->id != want->id)) {
+        return error("section id mismatch (%d != %d) (%d %d)", got->id, want->id, got->len, want->len);
     }
 
-    if (slow(s1->len != s2->len)) {
-        return error("section len mismatch (%x != %x)", s1->len, s2->len);
+    if (slow(got->len != want->len)) {
+        return error("section len mismatch (%d != %d)", got->len, want->len);
     }
 
-    if (slow(memcmp(s1->data, s2->data, s1->len) != 0)) {
+    if (slow(memcmp(got->data, want->data, got->len) != 0)) {
+        printf("got: ");
+        for (i = 0; i < got->len; i++) {
+            printf("%02x ", got->data[i]);
+        }
+
+        printf("\nwant: ");
+        for (i = 0; i < want->len; i++) {
+            printf("%02x ", want->data[i]);
+        }
+
+        puts("");
+
         return error("section data mismatch");
     }
 
     return OK;
+}
+
+
+static u8
+asserttypedecl(const void *gotv, const void *wantv)
+{
+    u8              ret;
+    const FuncDecl  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(got->form != want->form)) {
+        return error("funcdecl form mismatch (%x != %x)",
+                     got->form, want->form);
+    }
+
+    ret = assertarray(got->params, want->params, "type params", asserttype);
+    if (slow(ret != OK)) {
+        return ERR;
+    }
+
+    return assertarray(got->rets, want->rets, "rets", asserttype);
+}
+
+
+static u8
+asserttype(const void *got, const void *want)
+{
+    const Type  *p1, *p2;
+
+    p1 = got;
+    p2 = want;
+
+    if (p1 == p2) {
+        return OK;
+    }
+
+    if (slow((p1 == NULL || p2 == NULL) || (*p1 != *p2))) {
+        return error("return mismatch (%d != %d)",
+                     (p1 == NULL) ? 0 : *p1,
+                     (p2 == NULL ? 0 : *p2));
+    }
+
+    return OK;
+}
+
+
+static u8
+assertimportdecl(const void *gotv, const void *wantv)
+{
+    const ImportDecl  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(!stringcmp(got->module, want->module))) {
+        return error("import module string mismatch: (%S) != (%S)",
+                     got->module, want->module);
+    }
+
+    if (slow(!stringcmp(got->field, want->field))) {
+        return error("import field string mismatch: (%S) != (%S)",
+                     got->field, want->field);
+    }
+
+    if (slow(got->kind != want->kind)) {
+        return error("import kind mismatch (%d != %d)",
+                     got->kind, want->kind);
+    }
+
+    switch (want->kind) {
+    case Function:
+        return asserttypedecl(&got->u.function, &want->u.function);
+        break;
+    default:
+        return error("import kind data not implemented for %d", want->kind);
+    }
+
+    return OK;
+}
+
+
+static u8
+asserttabledecl(const void *gotv, const void *wantv)
+{
+    const TableDecl *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(got->type != want->type)) {
+        return error("table type mismatch (%d != %d)", got->type, want->type);
+    }
+
+    return assertresizablelimit(&got->limit, &want->limit);
+}
+
+
+static u8
+assertresizablelimit(const void *gotv, const void *wantv)
+{
+    const ResizableLimit  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(got->flags != want->flags)) {
+        return error("resizable limit flags mismatch (%d != %d)",
+                     got->flags, want->flags);
+    }
+
+    if (slow(got->initial != want->initial)) {
+        return error("resizable limit initial mismatch (%d != %d)",
+                     got->initial, want->initial);
+    }
+
+    if (slow(got->maximum != want->maximum)) {
+        return error("resizable limit maximum mismatch (%d != %d)",
+                     got->maximum, want->maximum);
+    }
+
+    return OK;
+}
+
+
+static u8
+assertmemorydecl(const void *gotv, const void *wantv)
+{
+    const MemoryDecl  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    return assertresizablelimit(&got->limit, &want->limit);
+}
+
+
+static u8
+assertglobaldecl(const void *gotv, const void *wantv)
+{
+    const GlobalDecl  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(got->type.type != want->type.type)) {
+        return error("global type mismatch (%d != %d)",
+                     got->type.type, want->type.type);
+    }
+
+    if (slow(got->type.mut != want->type.mut)) {
+        return error("global mutability mismatch (%d != %d)",
+                     got->type.mut, want->type.mut);
+    }
+
+    if (slow(got->u.i32val != want->u.i32val)) {
+        return error("global init data mismatch (%d != %d)",
+                     got->u.i32val != want->u.i32val);
+    }
+
+    return OK;
+}
+
+static u8
+assertexportdecl(const void *gotv, const void *wantv)
+{
+    const ExportDecl  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(!stringcmp(got->field, want->field))) {
+        return error("import field string mismatch: (%S) != (%S)",
+                     got->field, want->field);
+    }
+
+    if (slow(got->kind != want->kind)) {
+        return error("import kind mismatch (%d != %d)",
+                     got->kind, want->kind);
+    }
+
+    if (slow(got->index != want->index)) {
+        return error("import index mismatch (%d != %d)",
+                     got->index, want->index);
+    }
+
+    return OK;
+}
+
+
+static u8
+assertcodedecl(const void *gotv, const void *wantv)
+{
+    u8              ret;
+    u32             gotsize, wantsize;
+    const CodeDecl  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    ret = assertarray(got->locals, want->locals, "code locals", assertlocaldecl);
+    if (slow(ret != OK)) {
+        return ERR;
+    }
+
+    if (slow(got->start > got->end)) {
+        return error("invalid starts and end pointers in code data");
+    }
+
+    wantsize = (want->end - want->start);
+    gotsize  = (got->end - got->start);
+
+    if (slow(wantsize != gotsize)) {
+        return error("code section size mismatch (%d != %d)", gotsize, wantsize);
+    }
+
+    if (slow(memcmp(got->start, want->start, wantsize) != 0)) {
+        return error("code data mismatch");
+    }
+
+    return OK;
+}
+
+
+static u8
+assertlocaldecl(const void *gotv, const void *wantv)
+{
+    const LocalEntry  *got, *want;
+
+    got = gotv;
+    want = wantv;
+
+    if (slow(got->count != want->count)) {
+        return error("code locals count mismatch (%d != %d)",
+                     got->count, want->count);
+    }
+
+    return asserttype((const void *) got->type, (const void *) want->type);
 }
