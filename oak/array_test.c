@@ -3,6 +3,7 @@
  */
 
 #include <acorn.h>
+#include <stdio.h>
 #include "test.h"
 #include "array.h"
 
@@ -17,7 +18,7 @@ int
 main()
 {
     if (slow(newarray(0, 0) != NULL)) {
-        error("array of zero sized elements must fail");
+        printf("array of zero sized elements must fail\n");
         return 1;
     }
 
@@ -66,26 +67,31 @@ test_u8array()
         tc = &u8testcases[i];
         arr = newarray(tc->nalloc, tc->size);
         if (slow(arr == NULL)) {
-            return error("failed newarray(%u, %u)", tc->nalloc, tc->size);
+            printf("failed newarray(%u, %lu)\n", tc->nalloc, tc->size);
+            return ERR;
         }
 
         for (j = 0; j < (u8) tc->nitems; j++) {
             if (slow(arrayadd(arr, (u8 *) &tc->items[j]) != OK)) {
-                return error("failed to arrayadd(*, %u)", j);
+                printf("failed to arrayadd(*, %u)\n", j);
+                return ERR;
             }
 
             p = arrayget(arr, j);
             if (slow(p == NULL)) {
-                return error("failed to arrayget(*, %u)", j);
+                printf("failed to arrayget(*, %u)\n", j);
+                return ERR;
             }
 
             if (slow(*p != tc->items[j])) {
-                return error("set and get mismatch");
+                printf("set and get mismatch\n");
+                return ERR;
             }
         }
 
         if (slow(len(arr) != tc->nitems)) {
-            return error("wrong number of elements");
+            printf("wrong number of elements\n");
+            return ERR;
         }
 
         freearray(arr);
@@ -111,7 +117,8 @@ test_structarray()
 
     arr = newarray(10, sizeof(Struct));
     if (slow(arr == NULL)) {
-        return error("newarray(10, %u)", sizeof(Struct));
+        printf("newarray(10, %lu)", sizeof(Struct));
+        return ERR;
     }
 
     s.a = 1;
@@ -119,7 +126,8 @@ test_structarray()
     s.c = 1;
 
     if (slow(arrayadd(arr, &s) != OK)) {
-        return error("arrayadd() fail");
+        printf("arrayadd() fail");
+        return ERR;
     }
 
     s.a = 2;
@@ -127,7 +135,8 @@ test_structarray()
     s.c = 2;
 
     if (slow(arrayadd(arr, &s) != OK)) {
-        return error("arrayadd() fail");
+        printf("arrayadd() fail");
+        return ERR;
     }
 
     sum = 0;
@@ -137,7 +146,8 @@ test_structarray()
     }
 
     if (slow(sum != 9)) {
-        return error("arrayadd() not zeroing");
+        printf("arrayadd() not zeroing");
+        return ERR;
     }
 
     freearray(arr);
@@ -154,23 +164,27 @@ test_arraydel()
 
     arr = newarray(16, sizeof(u64));
     if (slow(arr == NULL)) {
-        return error("newarray(20, 8)");
+        printf("newarray(20, 8)");
+        return ERR;
     }
 
     u = 10;
     if (slow(arrayadd(arr, &u) != OK)) {
-        return error("arrayadd() fail");
+        printf("arrayadd() fail");
+        return ERR;
     }
 
     arraydel(arr, 0);
 
     if (slow(len(arr) != 0)) {
-        return error("arraydel() doesn't remove element");
+        printf("arraydel() doesn't remove element");
+        return ERR;
     }
 
     for (i = 0; i < 20; i++) {
         if (slow(arrayadd(arr, &i) != OK)) {
-            return error("arrayadd() failed");
+            printf("arrayadd() failed");
+            return ERR;
         }
     }
 
@@ -178,7 +192,8 @@ test_arraydel()
         p = arrayget(arr, i);
 
         if (slow(i != *p)) {
-            return error("value mismatch");
+            printf("value mismatch");
+            return ERR;
         }
     }
 
@@ -188,15 +203,18 @@ test_arraydel()
         p = arrayget(arr, i);
 
         if (i < 5 && *p != i) {
-            return error("elements < 5 must be unchanged");
+            printf("elements < 5 must be unchanged");
+            return ERR;
         }
 
         if (slow(*p == 5)) {
-            return error("value 5 still there");
+            printf("value 5 still there");
+            return ERR;
         }
 
         if (i >= 5 && *p != (i+1)) {
-            return error("elements >= 5 must be shifted");
+            printf("elements >= 5 must be shifted");
+            return ERR;
         }
     }
 
@@ -214,16 +232,19 @@ test_shrinkarray()
 
     arr = newarray(100, sizeof(u64));
     if (slow(arr == NULL)) {
-        return error("creating array");
+        printf("creating array");
+        return ERR;
     }
 
     if (slow(arraysize(arr) != (sizeof(u64) * 100))) {
-        return error("alloc size is wrong");
+        printf("alloc size is wrong");
+        return ERR;
     }
 
     new = shrinkarray(arr);
     if (slow(arraysize(new) != 0)) {
-        return error("shrink alloc size is wrong");
+        printf("shrink alloc size is wrong");
+        return ERR;
     }
 
     val = 10;
@@ -233,7 +254,8 @@ test_shrinkarray()
 
     new = shrinkarray(new);
     if (slow(arraysize(new) != (sizeof(u64) * 3))) {
-        return error("shrink alloc size is wrong");
+        printf("shrink alloc size is wrong");
+        return ERR;
     }
 
     freearray(new);

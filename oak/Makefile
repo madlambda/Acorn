@@ -11,6 +11,7 @@ LIBS=$(OBJDIR)/lib/libacorn.a
 
 
 SOURCES=test.c   \
+        error.c  \
         bin.c    \
         file.c   \
         array.c  \

@@ -10,6 +10,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "array.h"
+#include "error.h"
 #include "file.h"
 
 
@@ -25,7 +27,7 @@ openfile(const char *filename, Error *err)
 
     fd = open(filename, O_RDONLY, 0);
     if (slow(fd < 0)) {
-        errset(err, strerror(errno));
+        error(err, "failed to open \"%s\": %E", filename, errno);
         return NULL;
     }
 
@@ -50,7 +52,7 @@ openfile(const char *filename, Error *err)
 
 fail:
 
-    errset(err, strerror(errno));
+    error(err, "failed to open file: %E", errno);
     close(fd);
 
     return NULL;

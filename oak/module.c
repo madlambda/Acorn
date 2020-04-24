@@ -7,8 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "file.h"
 #include "array.h"
+#include "error.h"
+#include "file.h"
 #include "string.h"
 #include "opcodes.h"
 #include "module.h"
@@ -53,6 +54,20 @@ static const Parser  parsers[] = {
 };
 
 
+static const char  *Edupsect        = "section duplicated";
+static const char  *Estralloc       = "failed to allocate string";
+static const char  *Earrayadd       = "failed to add item to array: %E";
+static const char  *Eallocarray     = "failed to allocate array: %E";
+static const char  *Ecorruptsect    = "section corrupted";
+
+
+#define edupsect()      error(err, Edupsect)
+#define estralloc()     error(err, Estralloc)
+#define earrayadd()     error(err, Earrayadd, errno)
+#define earrayalloc()   error(err, Eallocarray, errno)
+#define ecorruptsect()  error(err, Ecorruptsect)
+
+
 Module *
 loadmodule(const char *filename, Error *err)
 {
@@ -60,15 +75,13 @@ loadmodule(const char *filename, Error *err)
     File    *file;
     Module  *mod;
 
-    err->msg = NULL;
-
     file = openfile(filename, err);
     if (slow(file == NULL)) {
         return NULL;
     }
 
     if (slow(file->size < 8)) {
-        errset(err, "WASM must have at least 8 bytes");
+        error(err, "WASM must have at least 8 bytes");
         goto fail;
     }
 
@@ -76,7 +89,7 @@ loadmodule(const char *filename, Error *err)
     end = file->data + file->size;
 
     if (slow(memcmp(begin, "\0asm", 4) != 0)) {
-        errset(err, "file is not a WASM module");
+        error(err, "file is not a WASM module");
         goto fail;
     }
 
@@ -124,17 +137,15 @@ parsesects(Module *m, u8 *begin, const u8 *end, Error *err)
         memset(&sect, 0, sizeof(Section));
 
         if (slow(parsesect(&begin, end, &sect, err) != OK)) {
-            return ERR;
+            return error(err, "failed to parse sect");
         }
 
         if (slow(arrayadd(m->sects, &sect) != OK)) {
-            errset(err, "failed to add section");
-            return ERR;
+            return error(err, "failed to add section");
         }
 
         if (slow(sect.id >= LastSectionId)) {
-            errset(err, "invalid section id");
-            return ERR;
+            return error(err, "invalid section id: %d", sect.id);
         }
 
         parser = parsers[sect.id];
@@ -153,13 +164,11 @@ static u8
 parsesect(u8 **begin, const u8 *end, Section *s, Error *err)
 {
     if (slow(u8vdecode(begin, end, (u8 *) &s->id) != OK)) {
-        errset(err, "malformed section code");
-        return ERR;
+        return error(err, "malformed section id");
     }
 
     if (slow(u32vdecode(begin, end, &s->len) != OK)) {
-        errset(err, "malformed section len");
-        return ERR;
+        return error(err, "malformed section len");
     }
 
     s->data = *begin;
@@ -179,26 +188,23 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
     FuncDecl  func;
 
     if (slow(m->types != NULL)) {
-        errset(err, "multiple type section entries");
-        return ERR;
+        return error(err, "multiple \"type\" section entries");
     }
 
     if (slow(u32vdecode(&begin, end, &count) != OK)) {
-        errset(err, "malformed type section");
-        return ERR;
+        return error(err, "malformed \"type\" section");
     }
 
     found = 0;
 
     m->types = newarray(count, sizeof(FuncDecl));
     if (slow(m->types == NULL)) {
-        return ERR;
+        return earrayalloc();
     }
 
     while (begin < end && found < count) {
         if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-            errset(err, "malformed form of func_type");
-            return ERR;
+            return error(err, "malformed \"form\" of \"type\" section");
         }
 
         memset(&func, 0, sizeof(FuncDecl));
@@ -206,62 +212,53 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
         func.form = (Type) -i8val;
 
         if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-            errset(err, "malformed param_count of func_type");
-            return ERR;
+            return error(err, "malformed param_count of func_type");
         }
 
         paramcount = u32val;
 
         func.params = newarray(paramcount, sizeof(Type));
         if (slow(func.params == NULL)) {
-            errset(err, "failed to create func array");
-            return ERR;
+            return earrayalloc();
         }
 
         for (i = 0; i < paramcount; i++) {
             if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-                errset(err, "malformed param type of func_type");
-                return ERR;
+                return error(err, "malformed param type of func_type");
             }
 
             value = -i8val;
 
             if (slow(arrayadd(func.params, &value) != OK)) {
-                errset(err, "failed to add type");
-                return ERR;
+                return earrayadd();
             }
         }
 
         if (slow(u8vdecode(&begin, end, &u8val) != OK)) {
-            errset(err, "failed to get return count");
-            return ERR;
+            return error(err, "failed to get return count");
         }
 
         retcount = u8val;
 
         func.rets = newarray(retcount, sizeof(Type));
         if (slow(func.rets == NULL)) {
-            errset(err, "failed to create ret array");
-            return ERR;
+            return earrayalloc();
         }
 
         for (i = 0; i < retcount; i++) {
             if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-                errset(err, "malformed param type of func_type");
-                return ERR;
+                return error(err, "malformed param type of func_type");
             }
 
             value = -i8val;
 
             if (slow(arrayadd(func.params, &value) != OK)) {
-                errset(err, "failed to add type");
-                return ERR;
+                return earrayadd();
             }
         }
 
         if (slow(arrayadd(m->types, &func) != OK)) {
-            errset(err, "failed to add func type");
-            return ERR;
+            return earrayadd();
         }
 
         found++;
@@ -270,8 +267,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
     expect(begin <= end);
 
     if (slow(found < count)) {
-        errset(err, "some types are missing, binary malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;
@@ -287,33 +283,28 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
     ImportDecl  import;
 
     if (slow(m->imports != NULL)) {
-        errset(err, "multiple imports section");
-        return ERR;
+        return edupsect();
     }
 
     if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-        errset(err, "imports section malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     nimports = u32val;
 
     m->imports = newarray(nimports, sizeof(ImportDecl));
     if (slow(m->imports == NULL)) {
-        errset(err, "failed to create imports array");
-        return ERR;
+        return earrayalloc();
     }
 
     for (i = 0; i < nimports; i++) {
         if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-            errset(err, "imports section malformed");
-            return ERR;
+            return ecorruptsect();
         }
 
         import.module = allocstring(u32val);
         if (slow(import.module == NULL)) {
-            errset(err, "failed to allocate module string");
-            return ERR;
+            return estralloc();
         }
 
         strset(import.module, begin, u32val);
@@ -321,14 +312,12 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
         begin += u32val;
 
         if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-            errset(err, "imports section malformed");
-            return ERR;
+            return ecorruptsect();
         }
 
         import.field = allocstring(u32val);
         if (slow(import.field == NULL)) {
-            errset(err, "failed to allocate field string");
-            return ERR;
+            return estralloc();
         }
 
         strset(import.field, begin, u32val);
@@ -336,35 +325,31 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
         begin += u32val;
 
         if (slow(u8vdecode(&begin, end, &u8val) != OK)) {
-            errset(err, "imports section malformed");
-            return ERR;
+            return ecorruptsect();
         }
 
         import.kind = u8val;
 
         if (slow(u8vdecode(&begin, end, &u8val) != OK)) {
-            errset(err, "imports section malformed");
-            return ERR;
+            return ecorruptsect();
         }
 
         switch (import.kind) {
         case Function:
             f = arrayget(m->types, u8val);
             if (slow(f == NULL)) {
-                errset(err, "import section references unknown function type");
-                return ERR;
+                return error(err, "import section references unknown function");
             }
 
             import.u.function = *f;
             break;
 
         default:
-            errset(err, "external kind not supported yet");
-            return ERR;
+            return error(err, "external kind not supported yet");
         }
 
         if (slow(arrayadd(m->imports, &import) != OK)) {
-            return ERR;
+            return earrayadd();
         }
     }
 
@@ -379,42 +364,35 @@ parsefunctions(Module *m, u8 *begin, const u8 *end, Error *err)
     FuncDecl  *f;
 
     if (slow(m->funcs != NULL)) {
-        errset(err, "multiple function sections");
-        return ERR;
+        return edupsect();
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        errset(err, "function section malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     m->funcs = newarray(count, sizeof(FuncDecl));
     if (slow(m->funcs == NULL)) {
-        errset(err, "failed to allocate funcs array");
-        return ERR;
+        return earrayalloc();
     }
 
     while (len(m->funcs) < count && begin < end) {
         if (slow(u32vdecode(&begin, end, &uval))) {
-            errset(err, "function section malformed");
-            return ERR;
+            return ecorruptsect();
         }
 
         f = arrayget(m->types, uval);
         if (slow(f == NULL)) {
-            errset(err, "type decl not found");
-            return ERR;
+            return error(err, "type %d not found", uval);
         }
 
         if (slow(arrayadd(m->funcs, f) != OK)) {
-            errset(err, "failed to add function to array");
-            return ERR;
+            return earrayadd();
         }
     }
 
     if (slow(len(m->funcs) < count)) {
-        errset(err, "functions missing, binary malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;
@@ -429,25 +407,21 @@ parsetables(Module *m, u8 *begin, const u8 *end, Error *err)
     TableDecl  tbl;
 
     if (slow(m->tables != NULL)) {
-        errset(err, "multiple table sections");
-        return ERR;
+        return edupsect();
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        errset(err, "table section malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     m->tables = newarray(count, sizeof(TableDecl));
     if (slow(m->tables == NULL)) {
-        errset(err, "failed to allocate tables array");
-        return ERR;
+        return earrayalloc();
     }
 
     while (len(m->tables) < count && begin < end) {
         if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-            errset(err, "malformed binary");
-            return ERR;
+            return ecorruptsect();
         }
 
         memset(&tbl, 0, sizeof(TableDecl));
@@ -459,14 +433,12 @@ parsetables(Module *m, u8 *begin, const u8 *end, Error *err)
         }
 
         if (slow(arrayadd(m->tables, &tbl) != OK)) {
-            errset(err, "failed to add table");
-            return ERR;
+            return earrayadd();
         }
     }
 
     if (slow(len(m->tables) < count)) {
-        errset(err, "failed to parse all table elements.");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;
@@ -480,19 +452,16 @@ parsememories(Module *m, u8 *begin, const u8 *end, Error *err)
     MemoryDecl  mem;
 
     if (slow(m->memories != NULL)) {
-        errset(err, "multiple memory sections");
-        return ERR;
+        return ecorruptsect();
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        errset(err, "memory section malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     m->memories = newarray(count, sizeof(MemoryDecl));
     if (slow(m->memories == NULL)) {
-        errset(err, "failed to create array");
-        return ERR;
+        return earrayalloc();
     }
 
     while (len(m->memories) < count && begin < end) {
@@ -503,14 +472,12 @@ parsememories(Module *m, u8 *begin, const u8 *end, Error *err)
         }
 
         if (slow(arrayadd(m->memories, &mem) != OK)) {
-            errset(err, "failed to add memory entry");
-            return ERR;
+            return earrayadd();
         }
     }
 
     if (slow(len(m->memories) < count)) {
-        errset(err, "failed to parse all memory entries");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;
@@ -526,34 +493,29 @@ parseglobals(Module *m, u8 *begin, const u8 *end, Error *err)
     GlobalDecl  global;
 
     if (slow(m->globals != NULL)) {
-        errset(err, "multiple global sections");
-        return ERR;
+        return ecorruptsect();
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        errset(err, "global section malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     m->globals = newarray(count, sizeof(GlobalDecl));
     if (slow(m->globals == NULL)) {
-        errset(err, "failed to create array");
-        return ERR;
+        return earrayalloc();
     }
 
     while (len(m->globals) < count && begin < end) {
         memset(&global, 0, sizeof(GlobalDecl));
 
         if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-            errset(err, "failed to parse global type");
-            return ERR;
+            return error(err, "failed to parse global type");
         }
 
         global.type.type = (Type) -i8val;
 
         if (slow(u8vdecode(&begin, end, &global.type.mut) != OK)) {
-            errset(err, "failed to parse global mutability");
-            return ERR;
+            return error(err, "failed to parse global mutability");
         }
 
         opcode = *begin++;
@@ -561,53 +523,50 @@ parseglobals(Module *m, u8 *begin, const u8 *end, Error *err)
         switch (opcode) {
         case OpgetGlobal:
             if (slow(u32vdecode(&begin, end, &global.u.globalindex) != OK)) {
-                errset(err, "failed to parse get_global value");
-                return ERR;
+                return error(err, "failed to parse get_global value");
             }
+
             break;
 
         case Opi32const:
             if (slow(s32vdecode(&begin, end, &global.u.i32val) != OK)) {
-                errset(err, "failed to parse i32.const value");
-                return ERR;
+                return error(err, "failed to parse i32.const value");
             }
+
             break;
 
         case Opi64const:
             if (slow(s64vdecode(&begin, end, &global.u.i64val) != OK)) {
-                errset(err, "failed to parse i64.const value");
-                return ERR;
+                return error(err, "failed to parse i64.const value");
             }
+
             break;
 
         case Opf32const:
             if (slow(u32decode(&begin, end, &global.u.f32val) != OK)) {
-                errset(err, "failed to parse f32.const");
-                return ERR;
+                return error(err, "failed to parse f32.const");
             }
+
             break;
 
         case Opf64const:
             if (slow(u32decode(&begin, end, &global.u.f32val) != OK)) {
-                errset(err, "failed to parse f32.const");
-                return ERR;
+                return error(err, "failed to parse f32.const");
             }
+
             break;
 
         default:
-            errset(err, "unsupported global expression");
-            return ERR;
+            return error(err, "unsupported global expression");
         }
 
         if (slow(arrayadd(m->globals, &global) != OK)) {
-            errset(err, "failed to add array");
-            return ERR;
+            return earrayadd();
         }
     }
 
     if (slow(len(m->globals) < count)) {
-        errset(err, "failed to parse all globals");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;
@@ -621,33 +580,28 @@ parseexports(Module *m, u8 *begin, const u8 *end, Error *err)
     ExportDecl  export;
 
     if (slow(m->exports != NULL)) {
-        errset(err, "multiple export sections");
-        return ERR;
+        return edupsect();
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        errset(err, "exports section malformed");
-        return ERR;
+        return ecorruptsect();
     }
 
     m->exports = newarray(count, sizeof(ExportDecl));
     if (slow(m->exports == NULL)) {
-        errset(err, "failed to allocate exports array");
-        return ERR;
+        return earrayalloc();
     }
 
     while (len(m->exports) < count && begin < end) {
         if (slow(u32vdecode(&begin, end, &uval) != OK)) {
-            errset(err, "failed to parse field_len");
-            return ERR;
+            return error(err, "failed to parse field_len");
         }
 
         memset(&export, 0, sizeof(ExportDecl));
 
         export.field = allocstring(uval);
         if (slow(export.field == NULL)) {
-            errset(err, "failed to allocate string");
-            return ERR;
+            return estralloc();
         }
 
         strset(export.field, begin, uval);
@@ -657,19 +611,16 @@ parseexports(Module *m, u8 *begin, const u8 *end, Error *err)
         export.kind = (u8) *begin++;
 
         if (slow(u32vdecode(&begin, end, &export.index) != OK)) {
-            errset(err, "failed to parse exports index");
-            return ERR;
+            return error(err, "failed to parse exports index");
         }
 
         if (slow(arrayadd(m->exports, &export) != OK)) {
-            errset(err, "failed to add export entry");
-            return ERR;
+            return earrayadd();
         }
     }
 
     if (slow(len(m->exports) < count)) {
-        errset(err, "failed to add all export entries");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;
@@ -680,8 +631,7 @@ static u8
 parsestarts(Module *m, u8 *begin, const u8 *end, Error *err)
 {
     if (slow(u32vdecode(&begin, end, &m->start) != OK)) {
-        errset(err, "failed to parse start function");
-        return ERR;
+        return error(err, "failed to parse start function");
     }
 
     return OK;
@@ -698,19 +648,16 @@ parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
     LocalEntry  local;
 
     if (slow(m->codes != NULL)) {
-        errset(err, "multiple code sections");
-        return ERR;
+        return edupsect();
     }
 
     if (slow(u32vdecode(&begin, end, &count) != OK)) {
-        errset(err, "malformed code section");
-        return ERR;
+        return ecorruptsect();
     }
 
     m->codes = newarray(count, sizeof(CodeDecl));
     if (slow(m->codes == NULL)) {
-        errset(err, "failed to allocate array");
-        return ERR;
+        return estralloc();
     }
 
     bodyend = 0;
@@ -719,73 +666,62 @@ parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
         bodybegin = begin;
 
         if (slow(u32vdecode(&begin, end, &bodysize) != OK)) {
-            errset(err, "failed to parse function body size");
-            return ERR;
+            return error(err, "failed to parse function body size");
         }
 
         bodyend = (bodybegin + bodysize);
 
         if (slow(*bodyend != 0x0b)) {
-            errset(err, "malformed function body");
-            return ERR;
+            return error(err, "malformed body: missing 0x0b in the end");
         }
 
         if (slow(u32vdecode(&begin, end, &localcount) != OK)) {
-            errset(err, "failed to parse body local count");
-            return ERR;
+            return error(err, "failed to parse body local count");
         }
 
         memset(&code, 0, sizeof(CodeDecl));
 
         code.locals = newarray(localcount, sizeof(LocalEntry));
         if (slow(code.locals == NULL)) {
-            errset(err, "failed to allocate array");
-            return ERR;
+            return earrayalloc();
         }
 
         while (len(code.locals) < localcount && begin < end) {
             memset(&local, 0, sizeof(LocalEntry));
 
             if (slow(u32vdecode(&begin, end, &local.count) != OK)) {
-                errset(err, "failed to parse local count");
-                return ERR;
+                return error(err, "failed to parse local count");
             }
 
             if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-                errset(err, "failed to parse local type");
-                return ERR;
+                return error(err, "failed to parse local type");
             }
 
             local.type = (Type) -i8val;
 
             if (slow(arrayadd(code.locals, &local) != OK)) {
-                errset(err, "failed to add local to array");
-                return ERR;
+                return earrayadd();
             }
         }
 
         if (slow(len(code.locals) < localcount)) {
-            errset(err, "failed to parse all locals");
-            return ERR;
+            return ecorruptsect();
         }
 
         code.start = begin;
         code.end = bodyend;
 
         if (slow(arrayadd(m->codes, &code) != OK)) {
-            errset(err, "failed to add code");
-            return ERR;
+            return earrayadd();
         }
     }
 
     if (slow(len(m->codes) < count)) {
-        errset(err, "failed to parse all function bodies");
-        return ERR;
+        return ecorruptsect();
     }
 
     if (slow(count > 0 && (end - bodyend) != 1)) {
-        errset(err, "surplus bytes in the end of code section");
-        return ERR;
+        return error(err, "surplus bytes in the end of code section");
     }
 
     return OK;
@@ -798,22 +734,19 @@ parselimits(u8 **begin, const u8 *end, ResizableLimit *limit, Error *err)
     u8  u8val;
 
     if (slow(u8vdecode(begin, end, &u8val) != OK)) {
-        errset(err, "malformed binary. Is it really WASM MVP binary?");
-        return ERR;
+        return error(err, "malformed limits. Is it really WASM MVP binary?");
     }
 
     limit->flags = u8val;
 
     if (slow(u32vdecode(begin, end, &limit->initial) != OK)) {
-        errset(err, "malformed binary");
-        return ERR;
+        return ecorruptsect();
     }
 
     if (slow((limit->flags & 1) &&
              u32vdecode(begin, end, &limit->maximum) != OK))
     {
-        errset(err, "malformed binary");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;
@@ -828,27 +761,23 @@ parsedatas(Module *m, u8 *begin, const u8 *end, Error *err)
     DataDecl  data;
 
     if (slow(m->datas != NULL)) {
-        errset(err, "multiple data sections");
-        return  ERR;
+        return edupsect();
     }
 
     if (slow(u32vdecode(&begin, end, &count) != OK)) {
-        errset(err, "failed to get count from data section");
-        return ERR;
+        return ecorruptsect();
     }
 
     m->datas = newarray(count, sizeof(DataDecl));
     if (slow(m->datas == NULL)) {
-        errset(err, "failed to create array");
-        return ERR;
+        return earrayalloc();
     }
 
     while (len(m->datas) < count && begin < end) {
         memset(&data, 0, sizeof(DataDecl));
 
         if (slow(u32vdecode(&begin, end, &data.index) != OK)) {
-            errset(err, "failed to get data index");
-            return ERR;
+            return error(err, "failed to get data index");
         }
 
         opcode = *begin++;
@@ -856,32 +785,27 @@ parsedatas(Module *m, u8 *begin, const u8 *end, Error *err)
         switch (opcode) {
         case Opi32const:
             if (slow(s32vdecode(&begin, end, &data.offset) != OK)) {
-                errset(err, "failed to parse i32.const value");
-                return ERR;
+                return error(err, "failed to parse i32.const value");
             }
             break;
 
         default:
-            errset(err, "unsupported data init expression");
-            return ERR;
+            return error(err, "unsupported data init expression");
         }
 
         if (slow(u32vdecode(&begin, end, &data.size) != OK)) {
-            errset(err, "failed to parse data size");
-            return ERR;
+            return error(err, "failed to parse data size");
         }
 
         data.data = begin;
 
         if (slow(arrayadd(m->datas, &data) != OK)) {
-            errset(err, "failed to add data array");
-            return ERR;
+            return earrayadd();
         }
     }
 
     if (slow(len(m->datas) < count)) {
-        errset(err, "not all data parsed");
-        return ERR;
+        return ecorruptsect();
     }
 
     return OK;

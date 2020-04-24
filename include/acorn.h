@@ -52,16 +52,8 @@
     } while (0)
 
 
-typedef struct {
-    const char  *msg;
-    void        *data;
-} Error;
-
-
 void    *copy(void *dst, const void *src, size_t n);
 void    *zmalloc(size_t size);
-char    *vsprint(char *start, char *end, const char *fmt, va_list vl);
-char    *sprint(char *start, char *end, const char *fmt, ...);
 
 
 #include <acorn/string.h>
@@ -70,5 +62,7 @@ char    *sprint(char *start, char *end, const char *fmt, ...);
 
 void    print(String *s, ...);
 void    vprint(String *s, va_list args);
+void    cprint(const char *format, ...);
+
 
 #endif /* _ACORN_H_ */
