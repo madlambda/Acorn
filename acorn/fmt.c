@@ -14,19 +14,174 @@
  *  %s      null-terminated string (C string)
  *  %S      String * (Acorn string)
  *  %d      base 10 integer
+ *  %c      char
  */
 
 
-#define MAXI64 "-9223372036854775808"
-
+/*
+ * Default formatters
+ */
+static u8 wrongfmt(String **buf, u8 **format, void *val);
+static u8 intfmt(String **buf, u8 **format, void *val);
+static u8 charfmt(String **buf, u8 **format, void *val);
+static u8 cstrfmt(String **buf, u8 **format, void *val);
+static u8 stringfmt(String **buf, u8 **format, void *val);
 
 static String *fmtintbuf(String *buf, i64 ival, int base);
 
 
-static const char  Eappend[] = "failed to append string";
 static const char  Einvalidverb[] = "invalid verb %X";
 
 
+#define MAXFMT ('z' - 'A' + 1)
+
+
+static Formatter  formatters[MAXFMT] = {
+    /* 'A' */
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    stringfmt,  /* S */
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,   /* [ */
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,   /* ` */
+
+    wrongfmt,   /* a */
+    wrongfmt,
+    charfmt,    /* c */
+    intfmt,     /* d */
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    cstrfmt,    /* s */
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,
+    wrongfmt,   /* z */
+};
+
+
+static Printer  defaultprinter = {
+    .formatters = formatters,
+};
+
+
+/*
+ * newprinter creates a custom printer.
+ * The function pfmtadd() can be used to extend or update the builtin
+ * formatters.
+ */
+Printer *
+newprinter()
+{
+    Printer  *printer;
+
+    printer = malloc(sizeof(Printer) + sizeof(Formatter) * MAXFMT);
+    if (slow(printer == NULL)) {
+        return NULL;
+    }
+
+    printer->formatters = offset(printer, sizeof(Printer));
+    memcpy(printer->formatters, formatters, sizeof(Formatter) * MAXFMT);
+
+    return printer;
+}
+
+
+/*
+ * Format using a custom printer.
+ */
+String *
+pfmt(Printer *printer, String *format, ...)
+{
+    String   *buf;
+    va_list  args;
+
+    va_start(args, format);
+    buf = vpfmt(printer, format, args);
+    va_end(args);
+
+    return buf;
+}
+
+
+String *
+vpfmt(Printer *printer, String *format, va_list args)
+{
+    String  *buf;
+
+    buf = allocstring(1 + format->len * 2);
+    if (slow(buf == NULL)) {
+        return NULL;
+    }
+
+    return vpfmtbuf(printer, buf, format, args);
+}
+
+
+String *
+pcfmt(Printer *printer, const char *format, ...)
+{
+    String   *sfmt, *s;
+    va_list  args;
+
+    sfmt = newstring((u8 *) format, strlen(format));
+    if (slow(sfmt == NULL)) {
+        return NULL;
+    }
+
+    va_start(args, format);
+    s = vpfmt(printer, sfmt, args);
+    va_end(args);
+
+    free(sfmt);
+
+    return s;
+}
+
+
+/*
+ * Format onto an allocated buffer.
+ */
 String *
 fmtbuf(String *buf, String *format, ...)
 {
@@ -34,13 +189,17 @@ fmtbuf(String *buf, String *format, ...)
     va_list  args;
 
     va_start(args, format);
-    s = vfmtbuf(buf, format, args);
+    s = vpfmtbuf(&defaultprinter, buf, format, args);
     va_end(args);
 
     return s;
 }
 
 
+/*
+ * Format the string into a newly allocated buffer.
+ * Users are responsible to free the returned buffer.
+ */
 String *
 fmt(String *format, ...)
 {
@@ -67,7 +226,7 @@ cfmtbuf(String *buf, const char *format, ...)
     }
 
     va_start(args, format);
-    s = vfmtbuf(buf, sfmt, args);
+    s = vpfmtbuf(&defaultprinter, buf, sfmt, args);
     va_end(args);
 
     free(sfmt);
@@ -76,6 +235,10 @@ cfmtbuf(String *buf, const char *format, ...)
 }
 
 
+/*
+ * Format the null-terminated string into a newly allocated buffer.
+ * Users are responsible to free the returned buffer.
+ */
 String *
 cfmt(const char *format, ...)
 {
@@ -123,26 +286,16 @@ vfmt(String *sfmt, va_list args)
         return NULL;
     }
 
-    return vfmtbuf(buf, sfmt, args);
+    return vpfmtbuf(&defaultprinter, buf, sfmt, args);
 }
 
 
 String *
-vfmtbuf(String *buf, String *sfmt, va_list args)
+vpfmtbuf(Printer *printer, String *buf, String *sfmt, va_list args)
 {
-    u8      *format, *end;
-    i64     ival;
-    char    *c, *err;
-    String  *s;
-    String  sintbuf;
-    u8      intbuf[slength(MAXI64)];
-    char    verberr[sizeof(Einvalidverb)];
-
-    sintbuf.len = 0;
-    sintbuf.nalloc = sizeof(intbuf);
-    sintbuf.start = intbuf;
-
-    err = NULL;
+    u8      *format, *end, ret;
+    u8      index;
+    void    *p;
 
     format = sfmt->start;
     end = offset(format, sfmt->len);
@@ -155,85 +308,47 @@ vfmtbuf(String *buf, String *sfmt, va_list args)
 
         format++;
 
-        switch (*format) {
-        case 'S':
-            s = va_arg(args, String *);
+        index = *format - 'A';
 
-            if (fast(s != NULL)) {
-                buf = append(buf, s);
-                if (slow(buf == NULL)) {
-                    err = (char *) Eappend;
-                    goto fmtfail;
-                }
-            }
-
-            format++;
-            continue;
-
-        case 's':
-            c = va_arg(args, char *);
-
-            if (fast(c != NULL)) {
-                buf = appendcstr(buf, c);
-                if (slow(buf == NULL)) {
-                    err = (char *) Eappend;
-                    goto fmtfail;
-                }
-            }
-
-            format++;
-            continue;
-
-        case 'd':
-            ival = va_arg(args, i64);
-
-            if (slow(fmtintbuf(&sintbuf, ival, 10) == NULL)) {
-                err = "failed to convert integer to string";
-                goto fmtfail;
-            }
-            buf = append(buf, &sintbuf);
-            if (slow(buf == NULL)) {
-                err = (char *) Eappend;
-                goto fmtfail;
-            }
-
-            memset(intbuf, 0, sizeof(intbuf));
-            sintbuf.len = 0;
-
-            format++;
-            continue;
-
-        default:
-
-            memcpy(verberr, Einvalidverb, sizeof(Einvalidverb));
-            err = verberr;
-            err[slength(verberr) - 1] = *format;
-
-fmtfail:
-
-            expect(err != NULL);
-
-            /* if it was a memory error, it will probably fail again */
-
-            buf = appendc(buf, 1, '(');
-            buf = appendcstr(buf, err);
-            if (slow(buf == NULL)) {
+        if (slow(index >= MAXFMT)) {
+            if (slow(wrongfmt(&buf, &format, NULL) != OK)) {
                 return NULL;
             }
-            buf = appendc(buf, 1, ')');
-            if (slow(buf == NULL)) {
-                return NULL;
-            }
-
-            err = NULL;
 
             format++;
             continue;
         }
+
+        p = va_arg(args, void *);
+
+        ret = printer->formatters[index](&buf, &format, p);
+        if (slow(ret != OK)) {
+            return NULL;
+        }
+
+        format++;
+        continue;
     }
 
     return buf;
 }
+
+
+void
+pfmtadd(Printer *printer, u8 flag, Formatter formatter)
+{
+   printer->formatters[flag - 'A'] = formatter;
+}
+
+
+void
+fmtadd(u8 flag, Formatter formatter)
+{
+    pfmtadd(&defaultprinter, flag, formatter);
+}
+
+
+#define MAXI64 "-9223372036854775808"
 
 
 String *
@@ -299,4 +414,90 @@ fmtintbuf(String *buf, i64 ival, int base)
 
     buf->len += len;
     return buf;
+}
+
+
+static u8
+wrongfmt(String **buf, u8 **format, void * unused(val))
+{
+    char  verberr[sizeof(Einvalidverb)];
+
+    memcpy(verberr, Einvalidverb, sizeof(Einvalidverb));
+
+    verberr[slength(verberr) - 1] = **format;
+
+    *buf = appendc(*buf, 1, '(');
+    *buf = appendcstr(*buf, verberr);
+    if (slow(*buf == NULL)) {
+        return ERR;
+    }
+
+    *buf = appendc(*buf, 1, ')');
+    if (slow(*buf == NULL)) {
+        return ERR;
+    }
+    return OK;
+}
+
+
+static u8
+intfmt(String **buf, u8 ** unused(format), void *val)
+{
+    String  sintbuf;
+    u8      intbuf[slength(MAXI64)];
+
+    sintbuf.len = 0;
+    sintbuf.nalloc = sizeof(intbuf);
+    sintbuf.start = intbuf;
+
+    if (slow(fmtintbuf(&sintbuf, (i64) val, 10) == NULL)) {
+        return ERR;
+    }
+    *buf = append(*buf, &sintbuf);
+    if (slow(buf == NULL)) {
+        return ERR;
+    }
+
+    return OK;
+}
+
+
+static u8
+charfmt(String **buf, u8 ** unused(format), void *val)
+{
+    ptr   p;
+    char  c;
+
+    p = (ptr) val;
+
+    c = (char) p;
+
+    *buf = appendc(*buf, 1, c);
+    if (slow(*buf == NULL)) {
+        return ERR;
+    }
+
+    return OK;
+}
+
+
+static u8
+stringfmt(String **buf, u8 ** unused(format), void *val)
+{
+    *buf = append(*buf, (String *) val);
+    if (slow(*buf == NULL)) {
+        return ERR;
+    }
+    return OK;
+}
+
+
+static u8
+cstrfmt(String **buf, u8 ** unused(format), void *val)
+{
+    *buf = appendcstr(*buf, (const char *) val);
+    if (slow(*buf == NULL)) {
+        return ERR;
+    }
+    return OK;
 }
