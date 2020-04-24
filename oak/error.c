@@ -79,6 +79,11 @@ errorinit(Error *err)
 void
 errorfree(Error *err)
 {
+    if (err->internal) {
+        /* internal errors are statically allocated */
+        return;
+    }
+
     if (err->msg) {
         free(err->msg);
     }

@@ -62,12 +62,12 @@ static const char  *Eallocarray     = "failed to allocate array: %s";
 static const char  *Ecorruptsect    = "section \"%s\" is corrupted";
 
 
-#define edupsect(name)      error(NULL, Edupsect, name)
-#define estralloc()         error(NULL, Estralloc)
-#define earrayadd()         error(NULL, Earrayadd, strerror(errno))
-#define earrayalloc()       error(NULL, Eallocarray, strerror(errno))
-#define ecorruptsect(name)  error(NULL, Ecorruptsect, name)
-#define emalformed(f,s)     error(NULL, "malformed \"%s\" of \"%s\" section", f, s);
+#define edupsect(name)      newerror(Edupsect, name)
+#define estralloc()         newerror(Estralloc)
+#define earrayadd()         newerror(Earrayadd, strerror(errno))
+#define earrayalloc()       newerror(Eallocarray, strerror(errno))
+#define ecorruptsect(name)  newerror(Ecorruptsect, name)
+#define emalformed(f,s)     newerror("malformed \"%s\" of \"%s\" section", f, s);
 
 
 static const char  *typesect     = "type";
@@ -94,7 +94,7 @@ loadmodule(Module *mod, const char *filename)
     }
 
     if (slow(file.size < 8)) {
-        err = error(NULL, "WASM must have at least 8 bytes");
+        err = newerror("WASM must have at least 8 bytes");
         goto fail;
     }
 
@@ -102,7 +102,7 @@ loadmodule(Module *mod, const char *filename)
     end = file.data + file.size;
 
     if (slow(memcmp(begin, "\0asm", 4) != 0)) {
-        err = error(NULL, "file is not a WASM module");
+        err = newerror("file is not a WASM module");
         goto fail;
     }
 
@@ -114,7 +114,7 @@ loadmodule(Module *mod, const char *filename)
 
     mod->sects = newarray(16, sizeof(Section));
     if (slow(mod->sects == NULL)) {
-        err = error(NULL, "failed to create sects array: %s", strerror(errno));
+        err = newerror("failed to create sects array: %s", strerror(errno));
         goto free;
     }
 
@@ -178,11 +178,11 @@ static Error *
 parsesect(u8 **begin, const u8 *end, Section *s)
 {
     if (slow(u8vdecode(begin, end, (u8 *) &s->id) != OK)) {
-        return error(NULL, "malformed section id");
+        return newerror("malformed section id");
     }
 
     if (slow(u32vdecode(begin, end, &s->len) != OK)) {
-        return error(NULL, "malformed section len");
+        return newerror("malformed section len");
     }
 
     s->data = *begin;
@@ -352,14 +352,14 @@ parseimports(Module *m, u8 *begin, const u8 *end)
         case Function:
             f = arrayget(m->types, u8val);
             if (slow(f == NULL)) {
-                return error(NULL, "import section references unknown function");
+                return newerror("import section references unknown function");
             }
 
             import.u.function = *f;
             break;
 
         default:
-            return error(NULL, "external kind not supported yet");
+            return newerror("external kind not supported yet");
         }
 
         if (slow(arrayadd(m->imports, &import) != OK)) {
@@ -397,7 +397,7 @@ parsefunctions(Module *m, u8 *begin, const u8 *end)
 
         f = arrayget(m->types, uval);
         if (slow(f == NULL)) {
-            return error(NULL, "type \"%d\" not found", uval);
+            return newerror("type \"%d\" not found", uval);
         }
 
         if (slow(arrayadd(m->funcs, f) != OK)) {
@@ -575,7 +575,7 @@ parseglobals(Module *m, u8 *begin, const u8 *end)
             break;
 
         default:
-            return error(NULL, "unsupported global expression");
+            return newerror("unsupported global expression");
         }
 
         if (slow(arrayadd(m->globals, &global) != OK)) {
@@ -649,7 +649,7 @@ static Error *
 parsestarts(Module *m, u8 *begin, const u8 *end)
 {
     if (slow(u32vdecode(&begin, end, &m->start) != OK)) {
-        return error(NULL, "failed to parse start function");
+        return newerror("failed to parse start function");
     }
 
     return NULL;
@@ -690,7 +690,7 @@ parsecodes(Module *m, u8 *begin, const u8 *end)
         bodyend = (bodybegin + bodysize);
 
         if (slow(*bodyend != 0x0b)) {
-            return error(NULL, "malformed body: missing 0x0b in the end");
+            return newerror("malformed body: missing 0x0b in the end");
         }
 
         if (slow(u32vdecode(&begin, end, &localcount) != OK)) {
@@ -739,7 +739,7 @@ parsecodes(Module *m, u8 *begin, const u8 *end)
     }
 
     if (slow(count > 0 && (end - bodyend) != 1)) {
-        return error(NULL, "surplus bytes in the end of code section");
+        return newerror("surplus bytes in the end of code section");
     }
 
     return NULL;
@@ -752,7 +752,7 @@ parselimits(u8 **begin, const u8 *end, ResizableLimit *limit)
     u8  u8val;
 
     if (slow(u8vdecode(begin, end, &u8val) != OK)) {
-        return error(NULL, "malformed limits. Is it really WASM MVP binary?");
+        return newerror("malformed limits. Is it really WASM MVP binary?");
     }
 
     limit->flags = u8val;
@@ -809,7 +809,7 @@ parsedatas(Module *m, u8 *begin, const u8 *end)
             break;
 
         default:
-            return error(NULL, "unsupported data init expression");
+            return newerror("unsupported data init expression");
         }
 
         if (slow(u32vdecode(&begin, end, &data.size) != OK)) {

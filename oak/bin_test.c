@@ -193,6 +193,9 @@ int main() {
 fail:
 
     cprint("[error] %e", err);
+
+    errorfree(err);
+
     return 1;
 }
 

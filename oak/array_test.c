@@ -6,39 +6,54 @@
 #include <stdio.h>
 #include "test.h"
 #include "array.h"
+#include "error.h"
 
 
-static u8 test_u8array();
-static u8 test_structarray();
-static u8 test_arraydel();
-static u8 test_shrinkarray();
+static Error *test_u8array();
+static Error *test_structarray();
+static Error *test_arraydel();
+static Error *test_shrinkarray();
 
 
 int
 main()
 {
+    Error  *err;
+
+    fmtadd('e', errorfmt);
+
     if (slow(newarray(0, 0) != NULL)) {
         printf("array of zero sized elements must fail\n");
         return 1;
     }
 
-    if (slow(test_u8array() != OK)) {
-        return 1;
+    err = test_u8array();
+
+    if (slow(err != NULL)) {
+        goto fail;
     }
 
-    if (slow(test_structarray() != OK)) {
-        return 1;
+    err = test_structarray();
+    if (slow(err != NULL)) {
+        goto fail;
     }
 
-    if (slow(test_arraydel() != OK)) {
-        return 1;
+    err = test_arraydel();
+    if (slow(err != NULL)) {
+        goto fail;
     }
 
-    if (slow(test_shrinkarray() != OK)) {
-        return 1;
+    err = test_shrinkarray();
+    if (slow(err != NULL)) {
+        goto fail;
     }
 
     return 0;
+
+fail:
+
+    cprint("[error] %e", err);
+    return 1;
 }
 
 
@@ -55,7 +70,7 @@ static const Testcase  u8testcases[] = {
 };
 
 
-static u8
+static Error *
 test_u8array()
 {
     u8              j, *p;
@@ -67,37 +82,32 @@ test_u8array()
         tc = &u8testcases[i];
         arr = newarray(tc->nalloc, tc->size);
         if (slow(arr == NULL)) {
-            printf("failed newarray(%u, %lu)\n", tc->nalloc, tc->size);
-            return ERR;
+            return newerror("failed newarray(%u, %lu)", tc->nalloc, tc->size);
         }
 
         for (j = 0; j < (u8) tc->nitems; j++) {
             if (slow(arrayadd(arr, (u8 *) &tc->items[j]) != OK)) {
-                printf("failed to arrayadd(*, %u)\n", j);
-                return ERR;
+                return newerror("failed to arrayadd(*, %u)", j);
             }
 
             p = arrayget(arr, j);
             if (slow(p == NULL)) {
-                printf("failed to arrayget(*, %u)\n", j);
-                return ERR;
+                return newerror("failed to arrayget(*, %u)", j);
             }
 
             if (slow(*p != tc->items[j])) {
-                printf("set and get mismatch\n");
-                return ERR;
+                return newerror("set and get mismatch");
             }
         }
 
         if (slow(len(arr) != tc->nitems)) {
-            printf("wrong number of elements\n");
-            return ERR;
+            return newerror("wrong number of elements");
         }
 
         freearray(arr);
     }
 
-    return OK;
+    return NULL;
 }
 
 
@@ -108,7 +118,7 @@ typedef struct {
 } Struct;
 
 
-static u8
+static Error *
 test_structarray()
 {
     u32     i, sum;
@@ -117,8 +127,7 @@ test_structarray()
 
     arr = newarray(10, sizeof(Struct));
     if (slow(arr == NULL)) {
-        printf("newarray(10, %lu)", sizeof(Struct));
-        return ERR;
+        return newerror("newarray(10, %lu)", sizeof(Struct));
     }
 
     s.a = 1;
@@ -126,8 +135,7 @@ test_structarray()
     s.c = 1;
 
     if (slow(arrayadd(arr, &s) != OK)) {
-        printf("arrayadd() fail");
-        return ERR;
+        return newerror("arrayadd() fail");
     }
 
     s.a = 2;
@@ -135,8 +143,7 @@ test_structarray()
     s.c = 2;
 
     if (slow(arrayadd(arr, &s) != OK)) {
-        printf("arrayadd() fail");
-        return ERR;
+        return newerror("arrayadd() fail");
     }
 
     sum = 0;
@@ -146,17 +153,16 @@ test_structarray()
     }
 
     if (slow(sum != 9)) {
-        printf("arrayadd() not zeroing");
-        return ERR;
+        return newerror("arrayadd() not zeroing");
     }
 
     freearray(arr);
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
+static Error *
 test_arraydel()
 {
     u64    u, i, *p;
@@ -164,27 +170,23 @@ test_arraydel()
 
     arr = newarray(16, sizeof(u64));
     if (slow(arr == NULL)) {
-        printf("newarray(20, 8)");
-        return ERR;
+        return newerror("newarray(20, 8)");
     }
 
     u = 10;
     if (slow(arrayadd(arr, &u) != OK)) {
-        printf("arrayadd() fail");
-        return ERR;
+        return newerror("arrayadd() fail");
     }
 
     arraydel(arr, 0);
 
     if (slow(len(arr) != 0)) {
-        printf("arraydel() doesn't remove element");
-        return ERR;
+        return newerror("arraydel() doesn't remove element");
     }
 
     for (i = 0; i < 20; i++) {
         if (slow(arrayadd(arr, &i) != OK)) {
-            printf("arrayadd() failed");
-            return ERR;
+            return newerror("arrayadd() failed");
         }
     }
 
@@ -192,8 +194,7 @@ test_arraydel()
         p = arrayget(arr, i);
 
         if (slow(i != *p)) {
-            printf("value mismatch");
-            return ERR;
+            return newerror("value mismatch");
         }
     }
 
@@ -203,28 +204,25 @@ test_arraydel()
         p = arrayget(arr, i);
 
         if (i < 5 && *p != i) {
-            printf("elements < 5 must be unchanged");
-            return ERR;
+            return newerror("elements < 5 must be unchanged");
         }
 
         if (slow(*p == 5)) {
-            printf("value 5 still there");
-            return ERR;
+            return newerror("value 5 still there");
         }
 
         if (i >= 5 && *p != (i+1)) {
-            printf("elements >= 5 must be shifted");
-            return ERR;
+            return newerror("elements >= 5 must be shifted");
         }
     }
 
     freearray(arr);
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
+static Error *
 test_shrinkarray()
 {
     u64    val;
@@ -232,19 +230,16 @@ test_shrinkarray()
 
     arr = newarray(100, sizeof(u64));
     if (slow(arr == NULL)) {
-        printf("creating array");
-        return ERR;
+        return newerror("creating array");
     }
 
     if (slow(arraysize(arr) != (sizeof(u64) * 100))) {
-        printf("alloc size is wrong");
-        return ERR;
+        return newerror("alloc size is wrong");
     }
 
     new = shrinkarray(arr);
     if (slow(arraysize(new) != 0)) {
-        printf("shrink alloc size is wrong");
-        return ERR;
+        return newerror("shrink alloc size is wrong");
     }
 
     val = 10;
@@ -254,11 +249,10 @@ test_shrinkarray()
 
     new = shrinkarray(new);
     if (slow(arraysize(new) != (sizeof(u64) * 3))) {
-        printf("shrink alloc size is wrong");
-        return ERR;
+        return newerror("shrink alloc size is wrong");
     }
 
     freearray(new);
 
-    return OK;
+    return NULL;
 }

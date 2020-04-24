@@ -120,12 +120,11 @@ assertmodule(const Module *m1, const Module *m2)
     }
 
     if (slow(m1 == NULL || m2 == NULL)) {
-        return error(NULL, "module mismatch (%p != %p)", m1, m2);
+        return newerror("module mismatch (%p != %p)", m1, m2);
     }
 
     if (slow(m1->version != m2->version)) {
-        return error(NULL, "version mismatch (%d != %d)",
-                     m1->version, m2->version);
+        return newerror("version mismatch (%d != %d)", m1->version, m2->version);
     }
 
     err = assertarray(m1->sects, m2->sects, "sect", assertsect);
@@ -186,12 +185,12 @@ assertarray(Array *got, Array *want, const char *name, Assert assertion)
 
     if (got != want) {
         if (slow(got == NULL || want == NULL)) {
-            return error(NULL, "%s mismatch (%p != %p)", name, got, want);
+            return newerror("%s mismatch (%p != %p)", name, got, want);
         }
 
         if (slow(len(got) != len(want))) {
-            return error(NULL, "%s len mismatch (%d != %d)", name,
-                         len(got), len(want));
+            return newerror("%s len mismatch (%d != %d)", name,
+                            len(got), len(want));
         }
 
         for (i = 0; i < len(want); i++) {
@@ -217,13 +216,13 @@ assertsect(const void *gotv, const void *wantv) {
     want = wantv;
 
     if (slow(got->id != want->id)) {
-        return error(NULL, "section id mismatch (%d != %d) (%d %d)",
-                     got->id, want->id, got->len, want->len);
+        return newerror("section id mismatch (%d != %d) (%d %d)",
+                        got->id, want->id, got->len, want->len);
     }
 
     if (slow(got->len != want->len)) {
-        return error(NULL, "section len mismatch (%d != %d)",
-                     got->len, want->len);
+        return newerror("section len mismatch (%d != %d)",
+                         got->len, want->len);
     }
 
     if (slow(memcmp(got->data, want->data, got->len) != 0)) {
@@ -239,7 +238,7 @@ assertsect(const void *gotv, const void *wantv) {
 
         puts("");
 
-        return error(NULL, "section data mismatch");
+        return newerror("section data mismatch");
     }
 
     return NULL;
@@ -256,8 +255,8 @@ asserttypedecl(const void *gotv, const void *wantv)
     want = wantv;
 
     if (slow(got->form != want->form)) {
-        return error(NULL, "funcdecl form mismatch (%x != %x)",
-                     got->form, want->form);
+        return newerror("funcdecl form mismatch (%x != %x)",
+                        got->form, want->form);
     }
 
     err = assertarray(got->params, want->params, "params", asserttype);
@@ -282,9 +281,9 @@ asserttype(const void *got, const void *want)
     }
 
     if (slow((p1 == NULL || p2 == NULL) || (*p1 != *p2))) {
-        return error(NULL, "return mismatch (%d != %d)",
-                     (p1 == NULL) ? 0 : *p1,
-                     (p2 == NULL ? 0 : *p2));
+        return newerror("return mismatch (%d != %d)",
+                        (p1 == NULL) ? 0 : *p1,
+                        (p2 == NULL ? 0 : *p2));
     }
 
     return NULL;
@@ -300,18 +299,18 @@ assertimportdecl(const void *gotv, const void *wantv)
     want = wantv;
 
     if (slow(!stringcmp(got->module, want->module))) {
-        return error(NULL, "import module string mismatch: (%S) != (%S)",
-                     got->module, want->module);
+        return newerror("import module string mismatch: (%S) != (%S)",
+                        got->module, want->module);
     }
 
     if (slow(!stringcmp(got->field, want->field))) {
-        return error(NULL, "import field string mismatch: (%S) != (%S)",
-                     got->field, want->field);
+        return newerror("import field string mismatch: (%S) != (%S)",
+                        got->field, want->field);
     }
 
     if (slow(got->kind != want->kind)) {
-        return error(NULL, "import kind mismatch (%d != %d)",
-                     got->kind, want->kind);
+        return newerror("import kind mismatch (%d != %d)",
+                        got->kind, want->kind);
     }
 
     switch (want->kind) {
@@ -319,7 +318,7 @@ assertimportdecl(const void *gotv, const void *wantv)
         return asserttypedecl(&got->u.function, &want->u.function);
         break;
     default:
-        return error(NULL, "import data not implemented for %d", want->kind);
+        return newerror("import data not implemented for %d", want->kind);
     }
 
     return NULL;
@@ -335,8 +334,8 @@ asserttabledecl(const void *gotv, const void *wantv)
     want = wantv;
 
     if (slow(got->type != want->type)) {
-        return error(NULL, "table type mismatch (%d != %d)",
-                     got->type, want->type);
+        return newerror("table type mismatch (%d != %d)",
+                        got->type, want->type);
     }
 
     return assertresizablelimit(&got->limit, &want->limit);
@@ -352,18 +351,18 @@ assertresizablelimit(const void *gotv, const void *wantv)
     want = wantv;
 
     if (slow(got->flags != want->flags)) {
-        return error(NULL, "resizable limit flags mismatch (%d != %d)",
-                     got->flags, want->flags);
+        return newerror("resizable limit flags mismatch (%d != %d)",
+                        got->flags, want->flags);
     }
 
     if (slow(got->initial != want->initial)) {
-        return error(NULL, "resizable limit initial mismatch (%d != %d)",
-                     got->initial, want->initial);
+        return newerror("resizable limit initial mismatch (%d != %d)",
+                        got->initial, want->initial);
     }
 
     if (slow(got->maximum != want->maximum)) {
-        return error(NULL, "resizable limit maximum mismatch (%d != %d)",
-                     got->maximum, want->maximum);
+        return newerror("resizable limit maximum mismatch (%d != %d)",
+                        got->maximum, want->maximum);
     }
 
     return NULL;
@@ -391,18 +390,18 @@ assertglobaldecl(const void *gotv, const void *wantv)
     want = wantv;
 
     if (slow(got->type.type != want->type.type)) {
-        return error(NULL, "global type mismatch (%d != %d)",
-                     got->type.type, want->type.type);
+        return newerror("global type mismatch (%d != %d)",
+                        got->type.type, want->type.type);
     }
 
     if (slow(got->type.mut != want->type.mut)) {
-        return error(NULL, "global mutability mismatch (%d != %d)",
-                     got->type.mut, want->type.mut);
+        return newerror("global mutability mismatch (%d != %d)",
+                        got->type.mut, want->type.mut);
     }
 
     if (slow(got->u.i32val != want->u.i32val)) {
-        return error(NULL, "global init data mismatch (%d != %d)",
-                     got->u.i32val != want->u.i32val);
+        return newerror("global init data mismatch (%d != %d)",
+                        got->u.i32val != want->u.i32val);
     }
 
     return NULL;
@@ -417,18 +416,18 @@ assertexportdecl(const void *gotv, const void *wantv)
     want = wantv;
 
     if (slow(!stringcmp(got->field, want->field))) {
-        return error(NULL, "import field string mismatch: (%S) != (%S)",
-                     got->field, want->field);
+        return newerror("import field string mismatch: (%S) != (%S)",
+                        got->field, want->field);
     }
 
     if (slow(got->kind != want->kind)) {
-        return error(NULL, "import kind mismatch (%d != %d)",
-                     got->kind, want->kind);
+        return newerror("import kind mismatch (%d != %d)",
+                        got->kind, want->kind);
     }
 
     if (slow(got->index != want->index)) {
-        return error(NULL, "import index mismatch (%d != %d)",
-                     got->index, want->index);
+        return newerror("import index mismatch (%d != %d)",
+                        got->index, want->index);
     }
 
     return NULL;
@@ -451,19 +450,19 @@ assertcodedecl(const void *gotv, const void *wantv)
     }
 
     if (slow(got->start > got->end)) {
-        return error(NULL, "invalid starts and end pointers in code data");
+        return newerror("invalid starts and end pointers in code data");
     }
 
     wantsize = (want->end - want->start);
     gotsize  = (got->end - got->start);
 
     if (slow(wantsize != gotsize)) {
-        return error(NULL, "code section size mismatch (%d != %d)",
-                     gotsize, wantsize);
+        return newerror("code section size mismatch (%d != %d)",
+                        gotsize, wantsize);
     }
 
     if (slow(memcmp(got->start, want->start, wantsize) != 0)) {
-        return error(NULL, "code data mismatch");
+        return newerror("code data mismatch");
     }
 
     return NULL;
@@ -479,8 +478,8 @@ assertlocaldecl(const void *gotv, const void *wantv)
     want = wantv;
 
     if (slow(got->count != want->count)) {
-        return error(NULL, "code locals count mismatch (%d != %d)",
-                     got->count, want->count);
+        return newerror("code locals count mismatch (%d != %d)",
+                        got->count, want->count);
     }
 
     return asserttype((const void *) got->type, (const void *) want->type);
