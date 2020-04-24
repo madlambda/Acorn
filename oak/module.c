@@ -55,7 +55,7 @@ static const Parser  parsers[] = {
 };
 
 
-static const char  *Edupsect        = "section %s duplicated";
+static const char  *Edupsect        = "section \"%s\" duplicated";
 static const char  *Estralloc       = "failed to allocate string";
 static const char  *Earrayadd       = "failed to add item to array: %s";
 static const char  *Eallocarray     = "failed to allocate array: %s";
