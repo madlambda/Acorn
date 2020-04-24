@@ -28,7 +28,6 @@ main()
     }
 
     err = test_u8array();
-
     if (slow(err != NULL)) {
         goto fail;
     }
