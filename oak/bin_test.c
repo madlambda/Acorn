@@ -150,6 +150,8 @@ int main() {
     const UTestcase  *utc;
     const STestcase  *stc;
 
+    fmtadd('e', errorfmt);
+
     err = test_encodeoverflow();
     if (slow(err != NULL)) {
         goto fail;
@@ -190,7 +192,7 @@ int main() {
 
 fail:
 
-    eprint(err);
+    cprint("[error] %e", err);
     return 1;
 }
 

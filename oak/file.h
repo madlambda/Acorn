@@ -13,7 +13,7 @@ typedef struct {
 } File;
 
 
-File *openfile(const char *filename, Error *err);
-void closefile(File *file);
+Error   *openfile(File *, const char *filename);
+void    closefile(File *file);
 
 #endif

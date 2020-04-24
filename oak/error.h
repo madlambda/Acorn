@@ -6,18 +6,22 @@
 #define _OAK_ERROR_H_
 
 
-typedef struct {
-    u8     heap;    /* tell if heap allocated */
-    Array  *stack;
+typedef struct Error {
+    const u8      internal;     /* internal errors are non-freeable */
+    u8            heap;
+    String        *msg;
+    struct Error  *cause;
 } Error;
 
 
 Error   *newerror(const char *format, ...);
-void    errorinit(Error *err);
-void    errorfree(Error *err)
-u8      error(Error *err, const char *format, ...);
-u8      iserror(Error *err, const char *errmsg);
-void    eprint(Error *err);
+void    errorinit(Error *);
+void    errorfree(Error *);
+Error   *error(Error *, const char *format, ...);
+u8      iserror(Error *, const char *errmsg);
+
+/* custom formatter */
+u8      errorfmt(String **buf, u8 **format, void *val);
 
 
 #endif /* _OAK_ERROR_H_ */

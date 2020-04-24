@@ -16,26 +16,27 @@
 #include "bin.h"
 
 
-typedef u8 (*Parser)(Module *m, u8 *begin, const u8 *end, Error *err);
+typedef Error *(*Parser)(Module *m, u8 *begin, const u8 *end);
 
 
-static u8 parsesects(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsesect(u8 **begin, const u8 *end, Section *s, Error *err);
-static u8 parsecustoms(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsetypes(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parseimports(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsefunctions(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsetables(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsememories(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parseglobals(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parseexports(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsestarts(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parseelements(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsecodes(Module *m, u8 *begin, const u8 *end, Error *err);
-static u8 parsedatas(Module *m, u8 *begin, const u8 *end, Error *err);
+/* section parsers */
+static Error *parsesects(Module *m, u8 *begin, const u8 *end);
+static Error *parsesect(u8 **begin, const u8 *end, Section *s);
+static Error *parsecustoms(Module *m, u8 *begin, const u8 *end);
+static Error *parsetypes(Module *m, u8 *begin, const u8 *end);
+static Error *parseimports(Module *m, u8 *begin, const u8 *end);
+static Error *parsefunctions(Module *m, u8 *begin, const u8 *end);
+static Error *parsetables(Module *m, u8 *begin, const u8 *end);
+static Error *parsememories(Module *m, u8 *begin, const u8 *end);
+static Error *parseglobals(Module *m, u8 *begin, const u8 *end);
+static Error *parseexports(Module *m, u8 *begin, const u8 *end);
+static Error *parsestarts(Module *m, u8 *begin, const u8 *end);
+static Error *parseelements(Module *m, u8 *begin, const u8 *end);
+static Error *parsecodes(Module *m, u8 *begin, const u8 *end);
+static Error *parsedatas(Module *m, u8 *begin, const u8 *end);
 
-static u8 parselimits(u8 **begin, const u8 *end, ResizableLimit *limit,
-    Error *err);
+/* helpers */
+static Error *parselimits(u8 **begin, const u8 *end, ResizableLimit *limit);
 
 
 static const Parser  parsers[] = {
@@ -54,66 +55,78 @@ static const Parser  parsers[] = {
 };
 
 
-static const char  *Edupsect        = "section duplicated";
+static const char  *Edupsect        = "section %s duplicated";
 static const char  *Estralloc       = "failed to allocate string";
-static const char  *Earrayadd       = "failed to add item to array: %E";
-static const char  *Eallocarray     = "failed to allocate array: %E";
-static const char  *Ecorruptsect    = "section corrupted";
+static const char  *Earrayadd       = "failed to add item to array: %s";
+static const char  *Eallocarray     = "failed to allocate array: %s";
+static const char  *Ecorruptsect    = "section \"%s\" is corrupted";
 
 
-#define edupsect()      error(err, Edupsect)
-#define estralloc()     error(err, Estralloc)
-#define earrayadd()     error(err, Earrayadd, errno)
-#define earrayalloc()   error(err, Eallocarray, errno)
-#define ecorruptsect()  error(err, Ecorruptsect)
+#define edupsect(name)      error(NULL, Edupsect, name)
+#define estralloc()         error(NULL, Estralloc)
+#define earrayadd()         error(NULL, Earrayadd, strerror(errno))
+#define earrayalloc()       error(NULL, Eallocarray, strerror(errno))
+#define ecorruptsect(name)  error(NULL, Ecorruptsect, name)
+#define emalformed(f,s)     error(NULL, "malformed \"%s\" of \"%s\" section", f, s);
 
 
-Module *
-loadmodule(const char *filename, Error *err)
+static const char  *typesect     = "type";
+static const char  *importsect   = "import";
+static const char  *functionsect = "function";
+static const char  *tablesect    = "table";
+static const char  *memorysect   = "memory";
+static const char  *globalsect   = "global";
+static const char  *exportsect   = "export";
+static const char  *codesect     = "code";
+static const char  *datasect     = "data";
+
+
+Error *
+loadmodule(Module *mod, const char *filename)
 {
     u8      *begin, *end;
-    File    *file;
-    Module  *mod;
+    File    file;
+    Error   *err;
 
-    file = openfile(filename, err);
-    if (slow(file == NULL)) {
-        return NULL;
+    err = openfile(&file, filename);
+    if (slow(err != NULL)) {
+        return error(err, "loading module");
     }
 
-    if (slow(file->size < 8)) {
-        error(err, "WASM must have at least 8 bytes");
+    if (slow(file.size < 8)) {
+        err = error(NULL, "WASM must have at least 8 bytes");
         goto fail;
     }
 
-    begin = file->data;
-    end = file->data + file->size;
+    begin = file.data;
+    end = file.data + file.size;
 
     if (slow(memcmp(begin, "\0asm", 4) != 0)) {
-        error(err, "file is not a WASM module");
+        err = error(NULL, "file is not a WASM module");
         goto fail;
     }
 
     begin += 4;
 
-    mod = zmalloc(sizeof(Module));
-    if (slow(mod == NULL)) {
-        goto fail;
-    }
+    memset(mod, 0, sizeof(Module));
 
     mod->file = file;
 
     mod->sects = newarray(16, sizeof(Section));
     if (slow(mod->sects == NULL)) {
+        err = error(NULL, "failed to create sects array: %s", strerror(errno));
         goto free;
     }
 
     u32decode(&begin, end, &mod->version);
 
-    if (slow(parsesects(mod, begin, end, err) != OK)) {
+    err = parsesects(mod, begin, end);
+    if (slow(err != NULL)) {
+        err = error(err, "loading module");
         goto free;
     }
 
-    return mod;
+    return NULL;
 
 free:
 
@@ -121,22 +134,23 @@ free:
 
 fail:
 
-    closefile(file);
-    return NULL;
+    closefile(&file);
+    return err;
 }
 
 
-static u8
-parsesects(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsesects(Module *m, u8 *begin, const u8 *end)
 {
-    u8       ret;
+    Error    *err;
     Parser   parser;
     Section  sect;
 
     while (begin < end) {
         memset(&sect, 0, sizeof(Section));
 
-        if (slow(parsesect(&begin, end, &sect, err) != OK)) {
+        err = parsesect(&begin, end, &sect);
+        if (slow(err != NULL)) {
             return error(err, "failed to parse sect");
         }
 
@@ -150,35 +164,35 @@ parsesects(Module *m, u8 *begin, const u8 *end, Error *err)
 
         parser = parsers[sect.id];
 
-        ret = parser(m, (u8 *) sect.data, sect.data + sect.len, err);
-        if (slow(ret != OK)) {
-            return ERR;
+        err = parser(m, (u8 *) sect.data, sect.data + sect.len);
+        if (slow(err != NULL)) {
+            return err;
         }
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsesect(u8 **begin, const u8 *end, Section *s, Error *err)
+static Error *
+parsesect(u8 **begin, const u8 *end, Section *s)
 {
     if (slow(u8vdecode(begin, end, (u8 *) &s->id) != OK)) {
-        return error(err, "malformed section id");
+        return error(NULL, "malformed section id");
     }
 
     if (slow(u32vdecode(begin, end, &s->len) != OK)) {
-        return error(err, "malformed section len");
+        return error(NULL, "malformed section len");
     }
 
     s->data = *begin;
     *begin += s->len;
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsetypes(Module *m, u8 *begin, const u8 *end)
 {
     i8        i8val;
     u8        u8val;
@@ -188,11 +202,11 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
     FuncDecl  func;
 
     if (slow(m->types != NULL)) {
-        return error(err, "multiple \"type\" section entries");
+        return edupsect(typesect);
     }
 
     if (slow(u32vdecode(&begin, end, &count) != OK)) {
-        return error(err, "malformed \"type\" section");
+        return ecorruptsect(typesect);
     }
 
     found = 0;
@@ -204,7 +218,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
 
     while (begin < end && found < count) {
         if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-            return error(err, "malformed \"form\" of \"type\" section");
+            return emalformed("form", typesect);
         }
 
         memset(&func, 0, sizeof(FuncDecl));
@@ -212,7 +226,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
         func.form = (Type) -i8val;
 
         if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-            return error(err, "malformed param_count of func_type");
+            return emalformed("param_count", typesect);
         }
 
         paramcount = u32val;
@@ -224,7 +238,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
 
         for (i = 0; i < paramcount; i++) {
             if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-                return error(err, "malformed param type of func_type");
+                return emalformed("param type", typesect);
             }
 
             value = -i8val;
@@ -235,7 +249,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
         }
 
         if (slow(u8vdecode(&begin, end, &u8val) != OK)) {
-            return error(err, "failed to get return count");
+            return emalformed("return count", typesect);
         }
 
         retcount = u8val;
@@ -247,7 +261,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
 
         for (i = 0; i < retcount; i++) {
             if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-                return error(err, "malformed param type of func_type");
+                return emalformed("ret type", typesect);
             }
 
             value = -i8val;
@@ -267,15 +281,15 @@ parsetypes(Module *m, u8 *begin, const u8 *end, Error *err)
     expect(begin <= end);
 
     if (slow(found < count)) {
-        return ecorruptsect();
+        return ecorruptsect(typesect);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parseimports(Module *m, u8 *begin, const u8 *end)
 {
     u8          u8val;
     u32         i, u32val, nimports;
@@ -283,11 +297,11 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
     ImportDecl  import;
 
     if (slow(m->imports != NULL)) {
-        return edupsect();
+        return edupsect(importsect);
     }
 
     if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-        return ecorruptsect();
+        return ecorruptsect(importsect);
     }
 
     nimports = u32val;
@@ -299,7 +313,7 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
 
     for (i = 0; i < nimports; i++) {
         if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-            return ecorruptsect();
+            return ecorruptsect(importsect);
         }
 
         import.module = allocstring(u32val);
@@ -312,7 +326,7 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
         begin += u32val;
 
         if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
-            return ecorruptsect();
+            return ecorruptsect(importsect);
         }
 
         import.field = allocstring(u32val);
@@ -325,27 +339,27 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
         begin += u32val;
 
         if (slow(u8vdecode(&begin, end, &u8val) != OK)) {
-            return ecorruptsect();
+            return ecorruptsect(importsect);
         }
 
         import.kind = u8val;
 
         if (slow(u8vdecode(&begin, end, &u8val) != OK)) {
-            return ecorruptsect();
+            return ecorruptsect(importsect);
         }
 
         switch (import.kind) {
         case Function:
             f = arrayget(m->types, u8val);
             if (slow(f == NULL)) {
-                return error(err, "import section references unknown function");
+                return error(NULL, "import section references unknown function");
             }
 
             import.u.function = *f;
             break;
 
         default:
-            return error(err, "external kind not supported yet");
+            return error(NULL, "external kind not supported yet");
         }
 
         if (slow(arrayadd(m->imports, &import) != OK)) {
@@ -353,22 +367,22 @@ parseimports(Module *m, u8 *begin, const u8 *end, Error *err)
         }
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsefunctions(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsefunctions(Module *m, u8 *begin, const u8 *end)
 {
     u32       count, uval;
     FuncDecl  *f;
 
     if (slow(m->funcs != NULL)) {
-        return edupsect();
+        return edupsect(functionsect);
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        return ecorruptsect();
+        return ecorruptsect(functionsect);
     }
 
     m->funcs = newarray(count, sizeof(FuncDecl));
@@ -378,12 +392,12 @@ parsefunctions(Module *m, u8 *begin, const u8 *end, Error *err)
 
     while (len(m->funcs) < count && begin < end) {
         if (slow(u32vdecode(&begin, end, &uval))) {
-            return ecorruptsect();
+            return ecorruptsect(functionsect);
         }
 
         f = arrayget(m->types, uval);
         if (slow(f == NULL)) {
-            return error(err, "type %d not found", uval);
+            return error(NULL, "type \"%d\" not found", uval);
         }
 
         if (slow(arrayadd(m->funcs, f) != OK)) {
@@ -392,26 +406,27 @@ parsefunctions(Module *m, u8 *begin, const u8 *end, Error *err)
     }
 
     if (slow(len(m->funcs) < count)) {
-        return ecorruptsect();
+        return ecorruptsect(functionsect);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsetables(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsetables(Module *m, u8 *begin, const u8 *end)
 {
     i8         i8val;
     u32        count;
+    Error      *err;
     TableDecl  tbl;
 
     if (slow(m->tables != NULL)) {
-        return edupsect();
+        return edupsect(tablesect);
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        return ecorruptsect();
+        return ecorruptsect(tablesect);
     }
 
     m->tables = newarray(count, sizeof(TableDecl));
@@ -421,15 +436,16 @@ parsetables(Module *m, u8 *begin, const u8 *end, Error *err)
 
     while (len(m->tables) < count && begin < end) {
         if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-            return ecorruptsect();
+            return ecorruptsect(tablesect);
         }
 
         memset(&tbl, 0, sizeof(TableDecl));
 
         tbl.type = (Type) -i8val;
 
-        if (slow(parselimits(&begin, end, &tbl.limit, err) != OK)) {
-            return ERR;
+        err = parselimits(&begin, end, &tbl.limit);
+        if (slow(err != NULL)) {
+            return error(err, "parsing table section");
         }
 
         if (slow(arrayadd(m->tables, &tbl) != OK)) {
@@ -438,25 +454,26 @@ parsetables(Module *m, u8 *begin, const u8 *end, Error *err)
     }
 
     if (slow(len(m->tables) < count)) {
-        return ecorruptsect();
+        return ecorruptsect(tablesect);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsememories(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsememories(Module *m, u8 *begin, const u8 *end)
 {
     u32         count;
+    Error       *err;
     MemoryDecl  mem;
 
     if (slow(m->memories != NULL)) {
-        return ecorruptsect();
+        return ecorruptsect(memorysect);
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        return ecorruptsect();
+        return ecorruptsect(memorysect);
     }
 
     m->memories = newarray(count, sizeof(MemoryDecl));
@@ -467,8 +484,9 @@ parsememories(Module *m, u8 *begin, const u8 *end, Error *err)
     while (len(m->memories) < count && begin < end) {
         memset(&mem, 0, sizeof(MemoryDecl));
 
-        if (slow(parselimits(&begin, end, &mem.limit, err) != OK)) {
-            return ERR;
+        err = parselimits(&begin, end, &mem.limit);
+        if (slow(err != NULL)) {
+            return error(err, "parsing memory section");
         }
 
         if (slow(arrayadd(m->memories, &mem) != OK)) {
@@ -477,15 +495,15 @@ parsememories(Module *m, u8 *begin, const u8 *end, Error *err)
     }
 
     if (slow(len(m->memories) < count)) {
-        return ecorruptsect();
+        return ecorruptsect(memorysect);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parseglobals(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parseglobals(Module *m, u8 *begin, const u8 *end)
 {
     i8          i8val;
     u8          opcode;
@@ -493,11 +511,11 @@ parseglobals(Module *m, u8 *begin, const u8 *end, Error *err)
     GlobalDecl  global;
 
     if (slow(m->globals != NULL)) {
-        return ecorruptsect();
+        return ecorruptsect(globalsect);
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        return ecorruptsect();
+        return ecorruptsect(globalsect);
     }
 
     m->globals = newarray(count, sizeof(GlobalDecl));
@@ -509,13 +527,13 @@ parseglobals(Module *m, u8 *begin, const u8 *end, Error *err)
         memset(&global, 0, sizeof(GlobalDecl));
 
         if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-            return error(err, "failed to parse global type");
+            return emalformed("type", globalsect);
         }
 
         global.type.type = (Type) -i8val;
 
         if (slow(u8vdecode(&begin, end, &global.type.mut) != OK)) {
-            return error(err, "failed to parse global mutability");
+            return emalformed("mutability", globalsect);
         }
 
         opcode = *begin++;
@@ -523,41 +541,41 @@ parseglobals(Module *m, u8 *begin, const u8 *end, Error *err)
         switch (opcode) {
         case OpgetGlobal:
             if (slow(u32vdecode(&begin, end, &global.u.globalindex) != OK)) {
-                return error(err, "failed to parse get_global value");
+                return emalformed("get_global", globalsect);
             }
 
             break;
 
         case Opi32const:
             if (slow(s32vdecode(&begin, end, &global.u.i32val) != OK)) {
-                return error(err, "failed to parse i32.const value");
+                return emalformed("i32.const", globalsect);
             }
 
             break;
 
         case Opi64const:
             if (slow(s64vdecode(&begin, end, &global.u.i64val) != OK)) {
-                return error(err, "failed to parse i64.const value");
+                return emalformed("i64.const", globalsect);
             }
 
             break;
 
         case Opf32const:
             if (slow(u32decode(&begin, end, &global.u.f32val) != OK)) {
-                return error(err, "failed to parse f32.const");
+                return emalformed("f32.const", globalsect);
             }
 
             break;
 
         case Opf64const:
             if (slow(u32decode(&begin, end, &global.u.f32val) != OK)) {
-                return error(err, "failed to parse f32.const");
+                emalformed("f64.const", globalsect);
             }
 
             break;
 
         default:
-            return error(err, "unsupported global expression");
+            return error(NULL, "unsupported global expression");
         }
 
         if (slow(arrayadd(m->globals, &global) != OK)) {
@@ -566,25 +584,25 @@ parseglobals(Module *m, u8 *begin, const u8 *end, Error *err)
     }
 
     if (slow(len(m->globals) < count)) {
-        return ecorruptsect();
+        return ecorruptsect(globalsect);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parseexports(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parseexports(Module *m, u8 *begin, const u8 *end)
 {
     u32         count, uval;
     ExportDecl  export;
 
     if (slow(m->exports != NULL)) {
-        return edupsect();
+        return edupsect(exportsect);
     }
 
     if (slow(u32vdecode(&begin, end, &count))) {
-        return ecorruptsect();
+        return ecorruptsect(exportsect);
     }
 
     m->exports = newarray(count, sizeof(ExportDecl));
@@ -594,7 +612,7 @@ parseexports(Module *m, u8 *begin, const u8 *end, Error *err)
 
     while (len(m->exports) < count && begin < end) {
         if (slow(u32vdecode(&begin, end, &uval) != OK)) {
-            return error(err, "failed to parse field_len");
+            return emalformed("field_len", exportsect);
         }
 
         memset(&export, 0, sizeof(ExportDecl));
@@ -611,7 +629,7 @@ parseexports(Module *m, u8 *begin, const u8 *end, Error *err)
         export.kind = (u8) *begin++;
 
         if (slow(u32vdecode(&begin, end, &export.index) != OK)) {
-            return error(err, "failed to parse exports index");
+            return emalformed("index", exportsect);
         }
 
         if (slow(arrayadd(m->exports, &export) != OK)) {
@@ -620,26 +638,26 @@ parseexports(Module *m, u8 *begin, const u8 *end, Error *err)
     }
 
     if (slow(len(m->exports) < count)) {
-        return ecorruptsect();
+        return ecorruptsect(exportsect);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsestarts(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsestarts(Module *m, u8 *begin, const u8 *end)
 {
     if (slow(u32vdecode(&begin, end, &m->start) != OK)) {
-        return error(err, "failed to parse start function");
+        return error(NULL, "failed to parse start function");
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsecodes(Module *m, u8 *begin, const u8 *end)
 {
     i8          i8val;
     u8          *bodybegin, *bodyend;
@@ -648,11 +666,11 @@ parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
     LocalEntry  local;
 
     if (slow(m->codes != NULL)) {
-        return edupsect();
+        return edupsect(codesect);
     }
 
     if (slow(u32vdecode(&begin, end, &count) != OK)) {
-        return ecorruptsect();
+        return ecorruptsect(codesect);
     }
 
     m->codes = newarray(count, sizeof(CodeDecl));
@@ -666,17 +684,17 @@ parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
         bodybegin = begin;
 
         if (slow(u32vdecode(&begin, end, &bodysize) != OK)) {
-            return error(err, "failed to parse function body size");
+            return emalformed("function body size", codesect);
         }
 
         bodyend = (bodybegin + bodysize);
 
         if (slow(*bodyend != 0x0b)) {
-            return error(err, "malformed body: missing 0x0b in the end");
+            return error(NULL, "malformed body: missing 0x0b in the end");
         }
 
         if (slow(u32vdecode(&begin, end, &localcount) != OK)) {
-            return error(err, "failed to parse body local count");
+            return emalformed("number of locals", codesect);
         }
 
         memset(&code, 0, sizeof(CodeDecl));
@@ -690,11 +708,11 @@ parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
             memset(&local, 0, sizeof(LocalEntry));
 
             if (slow(u32vdecode(&begin, end, &local.count) != OK)) {
-                return error(err, "failed to parse local count");
+                return emalformed("local_count", codesect);
             }
 
             if (slow(s8vdecode(&begin, end, &i8val) != OK)) {
-                return error(err, "failed to parse local type");
+                return emalformed("local type", codesect);
             }
 
             local.type = (Type) -i8val;
@@ -705,7 +723,7 @@ parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
         }
 
         if (slow(len(code.locals) < localcount)) {
-            return ecorruptsect();
+            return ecorruptsect(codesect);
         }
 
         code.start = begin;
@@ -717,55 +735,55 @@ parsecodes(Module *m, u8 *begin, const u8 *end, Error *err)
     }
 
     if (slow(len(m->codes) < count)) {
-        return ecorruptsect();
+        return ecorruptsect(codesect);
     }
 
     if (slow(count > 0 && (end - bodyend) != 1)) {
-        return error(err, "surplus bytes in the end of code section");
+        return error(NULL, "surplus bytes in the end of code section");
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parselimits(u8 **begin, const u8 *end, ResizableLimit *limit, Error *err)
+static Error *
+parselimits(u8 **begin, const u8 *end, ResizableLimit *limit)
 {
     u8  u8val;
 
     if (slow(u8vdecode(begin, end, &u8val) != OK)) {
-        return error(err, "malformed limits. Is it really WASM MVP binary?");
+        return error(NULL, "malformed limits. Is it really WASM MVP binary?");
     }
 
     limit->flags = u8val;
 
     if (slow(u32vdecode(begin, end, &limit->initial) != OK)) {
-        return ecorruptsect();
+        return ecorruptsect("limits");
     }
 
     if (slow((limit->flags & 1) &&
              u32vdecode(begin, end, &limit->maximum) != OK))
     {
-        return ecorruptsect();
+        return ecorruptsect("limits");
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
-parsedatas(Module *m, u8 *begin, const u8 *end, Error *err)
+static Error *
+parsedatas(Module *m, u8 *begin, const u8 *end)
 {
     u8        opcode;
     u32       count;
     DataDecl  data;
 
     if (slow(m->datas != NULL)) {
-        return edupsect();
+        return edupsect(datasect);
     }
 
     if (slow(u32vdecode(&begin, end, &count) != OK)) {
-        return ecorruptsect();
+        return ecorruptsect(datasect);
     }
 
     m->datas = newarray(count, sizeof(DataDecl));
@@ -777,7 +795,7 @@ parsedatas(Module *m, u8 *begin, const u8 *end, Error *err)
         memset(&data, 0, sizeof(DataDecl));
 
         if (slow(u32vdecode(&begin, end, &data.index) != OK)) {
-            return error(err, "failed to get data index");
+            return emalformed("index", datasect);
         }
 
         opcode = *begin++;
@@ -785,16 +803,17 @@ parsedatas(Module *m, u8 *begin, const u8 *end, Error *err)
         switch (opcode) {
         case Opi32const:
             if (slow(s32vdecode(&begin, end, &data.offset) != OK)) {
-                return error(err, "failed to parse i32.const value");
+                return emalformed("i32.const", datasect);
             }
+
             break;
 
         default:
-            return error(err, "unsupported data init expression");
+            return error(NULL, "unsupported data init expression");
         }
 
         if (slow(u32vdecode(&begin, end, &data.size) != OK)) {
-            return error(err, "failed to parse data size");
+            return emalformed("size", datasect);
         }
 
         data.data = begin;
@@ -805,32 +824,30 @@ parsedatas(Module *m, u8 *begin, const u8 *end, Error *err)
     }
 
     if (slow(len(m->datas) < count)) {
-        return ecorruptsect();
+        return ecorruptsect(datasect);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-static u8
+static Error *
 parsecustoms(__attribute__ ((unused)) Module *m,
             __attribute__ ((unused)) u8 *begin,
-            __attribute__ ((unused)) const u8 *end,
-            __attribute__ ((unused)) Error *err)
+            __attribute__ ((unused)) const u8 *end)
 {
     /* TODO(i4k) */
-    return OK;
+    return NULL;
 }
 
 
-static u8
+static Error *
 parseelements(__attribute__ ((unused)) Module *m,
             __attribute__ ((unused)) u8 *begin,
-            __attribute__ ((unused)) const u8 *end,
-            __attribute__ ((unused)) Error *err)
+            __attribute__ ((unused)) const u8 *end)
 {
     /* TODO(i4k) */
-    return OK;
+    return NULL;
 }
 
 
@@ -847,7 +864,7 @@ closemodule(Module *m)
      * TODO(i4k): Urgently in need of a memory pool.
      */
 
-    closefile(m->file);
+    closefile(&m->file);
     freearray(m->sects);
 
     if (m->types) {
@@ -914,6 +931,4 @@ closemodule(Module *m)
 
         freearray(m->codes);
     }
-
-    free(m);
 }

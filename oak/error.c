@@ -10,17 +10,42 @@
 #include "error.h"
 
 
+static Error *vnewerror(const char *format, va_list args);
+
+
+static String  internalerror = {
+    .start   = (u8 *) "internal error",
+    .len     = 14,
+};
+
+
+static Error  Einternal = {
+    .msg        = &internalerror,
+    .internal   = 1,
+};
+
+
 Error *
 newerror(const char *format, ...)
 {
     Error    *err;
-    String   *msg;
     va_list  args;
 
     va_start(args, format);
-    msg = cvfmt(format, args);
+    err = vnewerror(format, args);
     va_end(args);
 
+    return err;
+}
+
+
+static Error *
+vnewerror(const char *format, va_list args)
+{
+    Error   *err;
+    String  *msg;
+
+    msg = cvfmt(format, args);
     if (slow(msg == NULL)) {
         return NULL;
     }
@@ -31,39 +56,35 @@ newerror(const char *format, ...)
     }
 
     err->heap = 1;
-
-    err->stack = newarray(5, sizeof(ptr));
-    if (slow(err == NULL)) {
-        return NULL;
-    }
-
-    if (slow(arrayadd(err->stack, &msg) != OK)) {
-        free(msg);
-        return NULL;
-    }
-
+    err->msg = msg;
     return err;
 }
 
 
+/*
+ * Initialize an stack-allocated error object.
+ */
 void
 errorinit(Error *err)
 {
-    err->stack = NULL;
+    err->cause = NULL;
     err->heap = 0;
 }
 
+
+/*
+ * Free an error object. In case of stack allocated error objects, it frees its
+ * internal data.
+ */
 void
 errorfree(Error *err)
 {
-    u32  i;
+    if (err->msg) {
+        free(err->msg);
+    }
 
-    if (err->stack) {
-        for (i = 0; i < len(err->stack); i++) {
-            free(arrayget(err->stack, i));
-        }
-
-        freearray(err->stack);
+    if (err->cause) {
+        errorfree(err->cause);
     }
 
     if (err->heap) {
@@ -72,74 +93,86 @@ errorfree(Error *err)
 }
 
 
-u8
+/*
+ * Format the error and store it on the error object.
+ * It always returns ERR for convenience use.
+ *
+ *   if (somethingiswrong()) {
+ *       return error(err, "failed to do something");
+ *   }
+ */
+Error *
 error(Error *err, const char *format, ...)
 {
-    String   *msg;
+    Error    *new;
     va_list  args;
 
-    if (err->stack == NULL) {
-        err->stack = newarray(5, sizeof(ptr));
-        if (slow(err->stack == NULL)) {
-            cprint("failed to allocate error: %E", errno);
-            return ERR;
-        }
-    }
-
     va_start(args, format);
-    msg = cvfmt(format, args);
+    new = vnewerror(format, args);
     va_end(args);
 
-    if (slow(msg == NULL)) {
-        cprint("failed to format error: %E", errno);
-        return ERR;
+    if (slow(new == NULL)) {
+        /* return old error, if any */
+        return &Einternal;
     }
 
-    arrayadd(err->stack, msg);
-    return ERR;
+    if (err != NULL && err->msg != NULL) {
+        new->cause = err;
+    }
+
+    return new;
 }
 
 
+/*
+ * iserror() checks if errmsg is on the stack of errors.
+ */
 u8
 iserror(Error *err, const char *errmsg)
 {
-    u32     i;
-    String  *m;
-
-    for (i = 0; i < len(err->stack); i++) {
-        m = arrayget(err->stack, i);
-        if (fast(m != NULL)) {
-            if (cstringcmp(m, errmsg)) {
-                return 1;
-            }
+    while (err != NULL) {
+        if (err->msg == NULL) {
+            break;
         }
+
+        if (cstringcmp(err->msg, errmsg)) {
+            return 1;
+        }
+
+        err = err->cause;
     }
 
     return 0;
 }
 
-void
-eprint(Error *err)
+
+u8
+errorfmt(String **buf, u8 ** unused(format), void *val)
 {
-    i64     i;
-    String  *s;
+    Error  *err;
 
-    for (i = len(err->stack) - 1; i != 0; i--) {
-        s = arrayget(err->stack, i);
-        if (fast(s != NULL)) {
-            print(s);
+    err = (Error *) val;
 
-            free(s);
-
-            if (i > 0) {
-                cprint(": ");
-            }
-        }
+    if (err == NULL || err->msg == NULL) {
+        *buf = appendcstr(*buf, "(no error)");
+        return OK;
     }
 
-    freearray(err->stack);
+    while (err != NULL) {
+        *buf = append(*buf, err->msg);
+        if (slow(*buf == NULL)) {
+            return ERR;
+        }
 
-    err->stack = NULL;
+        if (err->cause != NULL) {
+            *buf = appendcstr(*buf, ": ");
+            if (slow(*buf == NULL)) {
+                return ERR;
+            }
+        }
 
-    cprint("\n");
+        err = err->cause;
+    }
+
+    return OK;
 }
