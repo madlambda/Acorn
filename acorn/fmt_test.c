@@ -225,7 +225,8 @@ mydumbfmt2(String **buf, u8 ** unused(format), void *val)
 
     c = (Custom *) val;
 
-    *buf = appendc(*buf, 10, 'a', ':', ' ', c->a, ',', ' ', 'b', ':', ' ', c->b);
+    *buf = appendc(*buf, 10,
+                   'a', ':', ' ', c->a, ',', ' ', 'b', ':', ' ', c->b);
     return OK;
 }
 
