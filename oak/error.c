@@ -55,20 +55,8 @@ vnewerror(const char *format, va_list args)
         return NULL;
     }
 
-    err->heap = 1;
     err->msg = msg;
     return err;
-}
-
-
-/*
- * Initialize an stack-allocated error object.
- */
-void
-errorinit(Error *err)
-{
-    err->cause = NULL;
-    err->heap = 0;
 }
 
 
@@ -92,9 +80,7 @@ errorfree(Error *err)
         errorfree(err->cause);
     }
 
-    if (err->heap) {
-        free(err);
-    }
+    free(err);
 }
 
 

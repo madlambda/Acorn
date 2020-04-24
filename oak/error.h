@@ -8,7 +8,6 @@
 
 typedef struct Error {
     const u8      internal;     /* internal errors are non-freeable */
-    u8            heap;
     String        *msg;
     struct Error  *cause;
 } Error;
