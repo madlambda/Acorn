@@ -30,9 +30,12 @@
 #define offset(p, offset)                                                     \
     ((void *) ((u8 *) (p) + (offset)))
 
+
 #define slength(val)                                                          \
     (sizeof(val) - 1)
 
+
+#define unused(p) p __attribute__((unused))
 
 #define nitems(a) (sizeof(a)/sizeof(a[0]))
 
