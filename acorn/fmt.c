@@ -37,8 +37,7 @@ static const char  Einvalidverb[] = "invalid verb %X";
 
 
 static Formatter  formatters[MAXFMT] = {
-    /* 'A' */
-    wrongfmt,
+    wrongfmt,   /* 'A' */
     wrongfmt,
     wrongfmt,
     wrongfmt,
