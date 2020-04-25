@@ -22,6 +22,22 @@ print(String *s, ...)
 
 
 void
+cprint(const char *format, ...)
+{
+    String   *s;
+    va_list  args;
+
+    va_start(args, format);
+    s = cvfmt(format, args);
+    va_end(args);
+
+    print(s);
+
+    free(s);
+}
+
+
+void
 vprint(String *format, va_list args)
 {
     String  *res;

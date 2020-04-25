@@ -10,50 +10,45 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "array.h"
+#include "error.h"
 #include "file.h"
 
 
 u8 *mmapfile(int fd, size_t size, int prot, int flags);
 
 
-File *
-openfile(const char *filename, Error *err)
+Error *
+openfile(File *file, const char *filename)
 {
-    int          fd;
-    File         *file;
+    Error        *err;
     struct stat  st;
 
-    fd = open(filename, O_RDONLY, 0);
-    if (slow(fd < 0)) {
-        errset(err, strerror(errno));
-        return NULL;
+    file->fd = open(filename, O_RDONLY, 0);
+    if (slow(file->fd < 0)) {
+        return error(NULL, "failed to open \"%s\": %s", filename, strerror(errno));
     }
 
-    if (slow(fstat(fd, &st) < 0)) {
+    if (slow(fstat(file->fd, &st) < 0)) {
+        err = error(NULL, "failed to stat file: %s", strerror(errno));
         goto fail;
     }
 
-    file = zmalloc(sizeof(File));
-    if (slow(file == NULL)) {
-        goto fail;
-    }
-
-    file->fd = fd;
     file->size = st.st_size;
 
-    file->data = mmapfile(fd, file->size, PROT_READ, MAP_PRIVATE);
+    file->data = mmapfile(file->fd, file->size, PROT_READ, MAP_PRIVATE);
     if (slow(file->data == NULL)) {
+        err = error(NULL, "failed to mmap file: %s", strerror(errno));
         goto fail;
     }
 
-    return file;
+    return NULL;
 
 fail:
 
-    errset(err, strerror(errno));
-    close(fd);
+    close(file->fd);
 
-    return NULL;
+    return err;
 }
 
 
@@ -65,7 +60,6 @@ closefile(File *f)
 
     munmap(f->data, f->size);
     close(f->fd);
-    free(f);
 }
 
 

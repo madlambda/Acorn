@@ -131,7 +131,7 @@ typedef struct {
 
 
 typedef struct {
-    File            *file;
+    File            file;
     u32             version;
     u32             start;      /* function index */
     Array           *sects;     /* of Section */
@@ -147,7 +147,7 @@ typedef struct {
 } Module;
 
 
-Module *loadmodule(const char *filename, Error *err);
-void closemodule(Module *m);
+Error   *loadmodule(Module *, const char *filename);
+void    closemodule(Module *m);
 
 #endif /* _OAK_MODULE_H_ */

@@ -10,7 +10,6 @@
 
 
 void *mustalloc(size_t size);
-u8 error(const char *fmt, ...);
 
 
 #endif /* _OAK_TEST_H_ */

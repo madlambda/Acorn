@@ -3,6 +3,8 @@
 #include <stdlib.h>
 
 #include "bin.h"
+#include "array.h"
+#include "error.h"
 #include "test.h"
 
 
@@ -20,12 +22,12 @@ typedef struct {
 } STestcase;
 
 
-u8 test_uvencode(u64 v, const u8 *want, u8 size);
-u8 test_uvdecode(const u8 *encoded, u8 size, u64 want);
-u8 test_svencode(i64 v, const u8 *want, u8 size);
-u8 test_svdecode(const u8 *encoded, u8 size, i64 want);
-u8 test_encodeoverflow();
-u8 test_decodemalformed();
+Error *test_uvencode(u64 v, const u8 *want, u8 size);
+Error *test_uvdecode(const u8 *encoded, u8 size, u64 want);
+Error *test_svencode(i64 v, const u8 *want, u8 size);
+Error *test_svdecode(const u8 *encoded, u8 size, i64 want);
+Error *test_encodeoverflow();
+Error *test_decodemalformed();
 
 
 static const UTestcase  utestcases[] = {
@@ -143,48 +145,62 @@ static const STestcase  stestcases[] = {
 
 
 int main() {
-    u8               ret;
     size_t           i;
+    Error            *err;
     const UTestcase  *utc;
     const STestcase  *stc;
 
-    if (slow(test_encodeoverflow() != OK)) {
-        exit(1);
+    fmtadd('e', errorfmt);
+
+    err = test_encodeoverflow();
+    if (slow(err != NULL)) {
+        goto fail;
     }
 
-    if (slow(test_decodemalformed() != OK)) {
-        exit(1);
+    err = test_decodemalformed();
+    if (slow(err != NULL)) {
+        goto fail;
     }
 
     for (i = 0; i < OAK_ULEB128_NTESTS; i++) {
         utc = &utestcases[i];
-        ret = test_uvencode(utc->val, utc->want, utc->size);
-        if (slow(ret != OK)) {
-            exit(1);
+        err = test_uvencode(utc->val, utc->want, utc->size);
+        if (slow(err != NULL)) {
+            goto fail;
         }
 
-        ret = test_uvdecode(utc->want, utc->size, utc->val);
-        if (slow(ret != OK)) {
-            exit(1);
+        err = test_uvdecode(utc->want, utc->size, utc->val);
+        if (slow(err != NULL)) {
+            goto fail;
         }
     }
 
     for (i = 0; i < OAK_SLEB128_NTESTS; i++) {
         stc = &stestcases[i];
-        ret = test_svencode(stc->val, stc->want, stc->size);
-        if (slow(ret != OK)) {
-            exit(1);
+        err = test_svencode(stc->val, stc->want, stc->size);
+        if (slow(err != NULL)) {
+            goto fail;
         }
 
-        ret = test_svdecode(stc->want, stc->size, stc->val);
-        if (slow(ret != OK)) {
-            exit(1);
+        err = test_svdecode(stc->want, stc->size, stc->val);
+        if (slow(err != NULL)) {
+            goto fail;
         }
     }
+
+    return 0;
+
+fail:
+
+    cprint("[error] %e", err);
+
+    errorfree(err);
+
+    return 1;
 }
 
 
-u8
+Error *
 test_encodeoverflow()
 {
     u8       *end;
@@ -195,32 +211,32 @@ test_encodeoverflow()
     end = buf;
     n = uvencode(100, buf, end);
     if (slow(n != -1)) {
-        return error("should have failed");
+        return newerror("should have failed");
     }
 
     end = buf + 1;
     n = uvencode(0xfffffff, buf, end);
     if (slow(n != -1)) {
-        return error("should have failed");
+        return newerror("should have failed");
     }
 
     end = buf;
     n = svencode(100, buf, end);
     if (slow(n != -1)) {
-        return error("should have failed");
+        return newerror("should have failed");
     }
 
     end = buf + 1;
     n = svencode(0xfffffff, buf, end);
     if (slow(n != -1)) {
-        return error("should have failed");
+        return newerror("should have failed");
     }
 
-    return OK;
+    return NULL;
 }
 
 
-u8
+Error *
 test_decodemalformed()
 {
     u64       uval;
@@ -234,60 +250,59 @@ test_decodemalformed()
 
     n = uvdecode(continuationbit, end, &uval);
     if (slow(n != -1)) {
-        return error("want -1 but got %ld (%lu)", n, uval);
+        return newerror("want -1 but got %ld (%lu)", n, uval);
     }
 
     end = continuationbit2 + 1;
 
     n = uvdecode(continuationbit2, end, &uval);
     if (slow(n != -1)) {
-        return error("want -1 but got %ld (%lu)", n, uval);
+        return newerror("want -1 but got %ld (%lu)", n, uval);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-u8
+Error *
 test_uvencode(u64 v, const u8 *want, u8 size)
 {
-    u8   *got, *end, ret;
-    int  i, n;
+    u8     *got, *end;
+    int    i, n;
+    Error  *err;
 
     got = mustalloc(size);
     end = got + size;
 
     n = uvencode(v, got, end);
 
-    ret = ERR;
+    err = NULL;
 
     if (slow(n != size)) {
-        error("uleb enc: val %ld, encoded %d bytes but expected %d", v, n,
-              size);
+        err = newerror("uleb enc: val %ld, encoded %d bytes but expected %d",
+                       v, n, size);
 
         goto fail;
     }
 
     for (i = 0; i < size; i++) {
         if (slow(want[i] != got[i])) {
-            error("uleb enc: val %ld, byte %d, 0x%x != 0x%x", v, i, want[i],
-                  got[i]);
+            err = newerror("uleb enc: val %ld, byte %d, 0x%x != 0x%x",
+                           v, i, want[i], got[i]);
 
             goto fail;
         }
     }
 
-    ret = OK;
-
 fail:
 
     free(got);
 
-    return ret;
+    return err;
 }
 
 
-u8
+Error *
 test_uvdecode(const u8 *encoded, u8 size, u64 want)
 {
     u64       got;
@@ -298,57 +313,57 @@ test_uvdecode(const u8 *encoded, u8 size, u64 want)
 
     got_size = uvdecode(encoded, end, &got);
     if (slow((ssize_t) size != got_size)) {
-        return error("decoding for %lu: read %d bytes but want %d", want,
-                     got_size, size);
+        return newerror("decoding for %lu: read %d bytes but want %d", want,
+                        got_size, size);
     }
 
     if (slow(got != want)) {
-        return error("decoding for %lu: got %llu", want, got);
+        return newerror("decoding for %lu: got %llu", want, got);
     }
 
-    return OK;
+    return NULL;
 }
 
 
-u8
+Error *
 test_svencode(i64 v, const u8 *want, u8 size)
 {
-    u8   *got, *end, ret;
-    int  i, n;
+    u8     *got, *end;
+    int    i, n;
+    Error  *err;
 
     got = mustalloc(size);
     end = got + size;
 
+    err = NULL;
+
     n = svencode(v, got, end);
 
-    ret = ERR;
-
     if (slow(n != size)) {
-        error("sleb enc: val %ld, encoded %d bytes but expected %d", v, n, size);
+        err = newerror("sleb enc: val %ld, encoded %d bytes but expected %d",
+                       v, n, size);
 
         goto fail;
     }
 
     for (i = 0; i < size; i++) {
         if (slow(want[i] != got[i])) {
-            error("sleb enc: val %ld, byte %d, 0x%x != 0x%x", v, i, want[i],
-                  got[i]);
+            err = newerror("sleb enc: val %ld, byte %d, 0x%x != 0x%x",
+                           v, i, want[i], got[i]);
 
             goto fail;
         }
     }
 
-    ret = OK;
-
 fail:
 
     free(got);
 
-    return ret;
+    return err;
 }
 
 
-u8
+Error *
 test_svdecode(const u8 *encoded, u8 size, i64 want) {
     i64       got;
     ssize_t   got_size;
@@ -358,13 +373,13 @@ test_svdecode(const u8 *encoded, u8 size, i64 want) {
 
     got_size = svdecode(encoded, end, &got);
     if (slow((ssize_t) size != got_size)) {
-        return error("decoding for %lld: read %d bytes but want %d", want,
-                     got_size, size);
+        return newerror("decoding for %lld: read %d bytes but want %d", want,
+                        got_size, size);
     }
 
     if (slow(got != want)) {
-        return error("decoding for %ld: got %ld", want, got);
+        return newerror("decoding for %ld: got %ld", want, got);
     }
 
-    return OK;
+    return NULL;
 }
