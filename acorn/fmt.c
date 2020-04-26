@@ -481,7 +481,7 @@ wrongfmt(String **buf, u8 **format, void * unused(val))
         }
 
         if (*pfmt == ')') {
-            pv = copy(pv, fmt, min(pfmt - fmt + 1, 5));
+            pv = copy(pv, fmt, min(pfmt - fmt + 1, (int) slength("(u64)")));
         } else {
             pfmt = fmt;
         }
