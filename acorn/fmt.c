@@ -348,6 +348,8 @@ fmtadd(u8 flag, Formatter formatter)
 
 
 #define MAXI64 "-9223372036854775808"
+#define MAXU64 "18446744073709551615"
+#define MAXINTBUF MAXU64
 
 
 String *
@@ -416,14 +418,76 @@ fmtintbuf(String *buf, i64 ival, int base)
 }
 
 
+static String *
+fmtuintbuf(String *buf, u64 uval, int base)
+{
+    u8      *p, *start, *end;
+    size_t  maxlen, len;
+    u8      tmp[slength(MAXU64)];
+
+    if (slow(base != 10)) {
+        /* TODO(i4k) */
+        return NULL;
+    }
+
+    maxlen = slength(MAXU64);
+
+    if (slow((strnalloc(buf) - len(buf)) < maxlen)) {
+        return NULL;
+    }
+
+    p = offset(tmp, maxlen);
+
+    do {
+        *(--p) = (u8) (uval % base + '0');
+        uval /= base;
+    } while (uval != 0);
+
+    len = (tmp + maxlen) - p;
+    start = (buf->start + buf->len);
+    end = start + len;
+
+    while (start < end) {
+        *start++ = *p++;
+    }
+
+    buf->len += len;
+    return buf;
+}
+
+
+#define min(a, b)                                                             \
+    ((a < b) ? (a) : (b))
+
+
 static u8
 wrongfmt(String **buf, u8 **format, void * unused(val))
 {
-    char  verberr[sizeof(Einvalidverb)];
+    u8    *fmt, *pfmt, *pv;
+    char  verberr[slength(Einvalidverb) + slength("(u64)") + 1];
 
-    memcpy(verberr, Einvalidverb, sizeof(Einvalidverb));
+    fmt = pfmt = *format;
+    pv = copy(verberr, Einvalidverb, slength(Einvalidverb));
+    pv -= 1;
+    *pv++ = *pfmt++;
 
-    verberr[slength(verberr) - 1] = **format;
+    fmt++;
+
+    if (*pfmt == '(') {
+        /* look for ')' */
+
+        while (*pfmt != '\0' && *pfmt != ')') {
+            pfmt++;
+        }
+
+        if (*pfmt == ')') {
+            pv = copy(pv, fmt, min(pfmt - fmt + 1, 5));
+        } else {
+            pfmt = fmt;
+        }
+    }
+
+    *pv = '\0';
 
     *buf = appendc(*buf, 1, '(');
     *buf = appendcstr(*buf, verberr);
@@ -435,27 +499,134 @@ wrongfmt(String **buf, u8 **format, void * unused(val))
     if (slow(*buf == NULL)) {
         return ERR;
     }
+
+    *format = pfmt;
     return OK;
 }
 
 
 static u8
-intfmt(String **buf, u8 ** unused(format), void *val)
+intfmt(String **buf, u8 ** format, void *val)
 {
+    u8      *fmt;
+    i64     ival;
+    u64     uval;
+    ptr     p;
     String  sintbuf;
-    u8      intbuf[slength(MAXI64)];
+    u8      intbuf[slength(MAXINTBUF)];
 
     sintbuf.len = 0;
     sintbuf.nalloc = sizeof(intbuf);
     sintbuf.start = intbuf;
 
-    if (slow(fmtintbuf(&sintbuf, (i64) val, 10) == NULL)) {
-        return ERR;
+    p = (ptr) val;
+
+    fmt = *format;
+
+    /* fmt[0] = 'd' */
+
+    if (fmt[1] == '(') {
+        fmt += 2;
+
+        switch (*fmt) {
+        case 'i':
+            fmt++;
+            switch (*fmt) {
+            case '8':
+                ival = (i8) (p & 0xff);
+                fmt++;
+                break;
+            case '1':
+                if (slow(fmt[1] != '6')) {
+                    return wrongfmt(buf, format, val);
+                }
+
+                fmt += 2;
+                ival = (i16) (p & 0xffff);
+                break;
+            case '3':
+                if (slow(fmt[1] != '2')) {
+                    return wrongfmt(buf, format, val);
+                }
+
+                fmt += 2;
+                ival = (i32) (p & 0xffffffff);
+                break;
+            case '6':
+                if (slow(fmt[3] != '4')) {
+                    return wrongfmt(buf, format, val);
+                }
+
+                fmt += 2;
+                ival = (i64) p;
+                break;
+            default:
+                return wrongfmt(buf, format, val);
+            }
+
+            /* guaranteed to fit in the buffer */
+            if (slow(fmtintbuf(&sintbuf, ival, 10) == NULL)) {
+                return ERR;
+            }
+
+            break;
+
+        case 'u':
+            fmt++;
+            switch (*fmt) {
+            case '8':
+                uval = (u8) (p & 0xff);
+                fmt++;
+                break;
+            case '1':
+                if (slow(fmt[1] != '6')) {
+                    return wrongfmt(buf, format, val);
+                }
+
+                fmt += 2;
+                uval = (u16) (p & 0xffff);
+                break;
+            case '3':
+                if (slow(fmt[1] != '2')) {
+                    return wrongfmt(buf, format, val);
+                }
+
+                fmt += 2;
+                uval = (u32) (p & 0xffffffff);
+                break;
+            case '6':
+                if (slow(fmt[1] != '4')) {
+                    return wrongfmt(buf, format, val);
+                }
+
+                fmt += 2;
+                uval = (u64) p;
+                break;
+            default:
+                return wrongfmt(buf, format, val);
+            }
+
+            if (slow(fmtuintbuf(&sintbuf, uval, 10) == NULL)) {
+                return ERR;
+            }
+
+            break;
+
+        default:
+            return wrongfmt(buf, format, val);
+        }
+    } else {
+        if (slow(fmtintbuf(&sintbuf, (int) p, 10) == NULL)) {
+            return ERR;
+        }
     }
+
     *buf = append(*buf, &sintbuf);
     if (slow(buf == NULL)) {
         return ERR;
     }
+
+    *format += (fmt - *format);
 
     return OK;
 }
