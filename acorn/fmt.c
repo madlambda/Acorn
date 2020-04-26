@@ -3,6 +3,7 @@
  */
 
 #include <acorn.h>
+#include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +31,7 @@ static u8 stringfmt(String **buf, u8 **format, void *val);
 
 static u8 baseintfmt(int base, String **buf, u8 ** format, void *val);
 static String *fmtintbuf(String *buf, i64 ival, int base);
+static String *fmtuintbuf(String *buf, u64 uval, int base);
 
 
 static const char  Einvalidverb[] = "invalid verb %X";
@@ -351,13 +353,17 @@ fmtadd(u8 flag, Formatter formatter)
 
 #define MAXI64 "-9223372036854775808"
 #define MAXU64 "18446744073709551615"
-#define MAXINTBUF MAXU64
+#define MAXINTBUF (slength(MAXU64) + 1)
 
 
 String *
 fmtint(i64 ival, int base)
 {
     String  *buf;
+
+    if (slow(base != 10 && base != 16)) {
+        return NULL;
+    }
 
     buf = allocstring(slength(MAXI64));
     if (slow(buf == NULL)) {
@@ -371,53 +377,21 @@ fmtint(i64 ival, int base)
 static String *
 fmtintbuf(String *buf, i64 ival, int base)
 {
-    u8      neg, *p, *start, *end;
-    u64     uval;
-    size_t  maxlen, len;
-    u8      tmp[slength(MAXI64)];
-
-    static const u8  hex[] = "0123456789abcdef";
-
-    if (slow(base != 10 && base != 16)) {
-        return NULL;
-    }
-
-    maxlen = slength(MAXI64);
-
-    if (slow((strnalloc(buf) - len(buf)) < maxlen)) {
-        return NULL;
-    }
+    u64  uval;
 
     if (ival < 0) {
-        neg = 1;
         uval = -ival;
+
+        buf = appendc(buf, 1, '-');
+        if (slow(buf == NULL)) {
+            return NULL;
+        }
+
     } else {
-        neg = 0;
         uval = ival;
     }
 
-    p = offset(tmp, maxlen);
-
-    do {
-        *(--p) = (u8) (base == 10 ? (uval % base + '0') : hex[uval & 0xF]);
-        uval /= base;
-    } while (uval != 0);
-
-    if (neg > 0) {
-        buf->start[buf->len] = '-';
-        buf->len++;
-    }
-
-    len = (tmp + maxlen) - p;
-    start = (buf->start + buf->len);
-    end = start + len;
-
-    while (start < end) {
-        *start++ = *p++;
-    }
-
-    buf->len += len;
-    return buf;
+    return fmtuintbuf(buf, uval, base);
 }
 
 
@@ -430,10 +404,7 @@ fmtuintbuf(String *buf, u64 uval, int base)
 
     static const u8  hex[] = "0123456789abcdef";
 
-    if (slow(base != 10 && base != 16)) {
-        /* TODO(i4k) */
-        return NULL;
-    }
+    expect(base == 10 || base == 16);
 
     maxlen = slength(MAXU64);
 
@@ -518,7 +489,7 @@ baseintfmt(int base, String **buf, u8 ** format, void *val)
     u64     uval;
     ptr     p;
     String  sintbuf;
-    u8      intbuf[slength(MAXINTBUF)];
+    u8      intbuf[MAXINTBUF];
 
     sintbuf.len = 0;
     sintbuf.nalloc = sizeof(intbuf);
