@@ -121,11 +121,6 @@ static const Testcaseint  i16tests[] = {
         .sprintf    = "%"PRIi16"test",
         .u.i16val   = 255,
     },
-    {
-        .format     = "%d(i16)",
-        .sprintf    = "%"PRIi16,
-        .u.i16val   = 0xffff,
-    },
 };
 
 
