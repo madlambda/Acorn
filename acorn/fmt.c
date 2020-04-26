@@ -23,10 +23,12 @@
  */
 static u8 wrongfmt(String **buf, u8 **format, void *val);
 static u8 intfmt(String **buf, u8 **format, void *val);
+static u8 hexfmt(String **buf, u8 **format, void *val);
 static u8 charfmt(String **buf, u8 **format, void *val);
 static u8 cstrfmt(String **buf, u8 **format, void *val);
 static u8 stringfmt(String **buf, u8 **format, void *val);
 
+static u8 baseintfmt(int base, String **buf, u8 ** format, void *val);
 static String *fmtintbuf(String *buf, i64 ival, int base);
 
 
@@ -93,7 +95,7 @@ static Formatter  formatters[MAXFMT] = {
     wrongfmt,
     wrongfmt,
     wrongfmt,
-    wrongfmt,
+    hexfmt,
     wrongfmt,
     wrongfmt,   /* z */
 };
@@ -374,8 +376,9 @@ fmtintbuf(String *buf, i64 ival, int base)
     size_t  maxlen, len;
     u8      tmp[slength(MAXI64)];
 
-    if (slow(base != 10)) {
-        /* TODO(i4k) */
+    static const u8  hex[] = "0123456789abcdef";
+
+    if (slow(base != 10 && base != 16)) {
         return NULL;
     }
 
@@ -396,7 +399,7 @@ fmtintbuf(String *buf, i64 ival, int base)
     p = offset(tmp, maxlen);
 
     do {
-        *(--p) = (u8) (uval % base + '0');
+        *(--p) = (u8) (base == 10 ? (uval % base + '0') : hex[uval & 0xF]);
         uval /= base;
     } while (uval != 0);
 
@@ -425,7 +428,9 @@ fmtuintbuf(String *buf, u64 uval, int base)
     size_t  maxlen, len;
     u8      tmp[slength(MAXU64)];
 
-    if (slow(base != 10)) {
+    static const u8  hex[] = "0123456789abcdef";
+
+    if (slow(base != 10 && base != 16)) {
         /* TODO(i4k) */
         return NULL;
     }
@@ -439,7 +444,7 @@ fmtuintbuf(String *buf, u64 uval, int base)
     p = offset(tmp, maxlen);
 
     do {
-        *(--p) = (u8) (uval % base + '0');
+        *(--p) = (u8) (base == 10 ? (uval % base + '0') : hex[uval & 0xF]);
         uval /= base;
     } while (uval != 0);
 
@@ -506,7 +511,7 @@ wrongfmt(String **buf, u8 **format, void * unused(val))
 
 
 static u8
-intfmt(String **buf, u8 ** format, void *val)
+baseintfmt(int base, String **buf, u8 ** format, void *val)
 {
     u8      *fmt;
     i64     ival;
@@ -553,7 +558,7 @@ intfmt(String **buf, u8 ** format, void *val)
                 ival = (i32) (p & 0xffffffff);
                 break;
             case '6':
-                if (slow(fmt[3] != '4')) {
+                if (slow(fmt[1] != '4')) {
                     return wrongfmt(buf, format, val);
                 }
 
@@ -565,7 +570,7 @@ intfmt(String **buf, u8 ** format, void *val)
             }
 
             /* guaranteed to fit in the buffer */
-            if (slow(fmtintbuf(&sintbuf, ival, 10) == NULL)) {
+            if (slow(fmtintbuf(&sintbuf, ival, base) == NULL)) {
                 return ERR;
             }
 
@@ -606,7 +611,7 @@ intfmt(String **buf, u8 ** format, void *val)
                 return wrongfmt(buf, format, val);
             }
 
-            if (slow(fmtuintbuf(&sintbuf, uval, 10) == NULL)) {
+            if (slow(fmtuintbuf(&sintbuf, uval, base) == NULL)) {
                 return ERR;
             }
 
@@ -616,7 +621,7 @@ intfmt(String **buf, u8 ** format, void *val)
             return wrongfmt(buf, format, val);
         }
     } else {
-        if (slow(fmtintbuf(&sintbuf, (int) p, 10) == NULL)) {
+        if (slow(fmtintbuf(&sintbuf, (int) p, base) == NULL)) {
             return ERR;
         }
     }
@@ -629,6 +634,20 @@ intfmt(String **buf, u8 ** format, void *val)
     *format += (fmt - *format);
 
     return OK;
+}
+
+
+static u8
+intfmt(String **buf, u8 ** format, void *val)
+{
+    return baseintfmt(10, buf, format, val);
+}
+
+
+static u8
+hexfmt(String **buf, u8 ** format, void *val)
+{
+    return baseintfmt(16, buf, format, val);
 }
 
 

@@ -43,6 +43,9 @@ static u8 test_fmtu16();
 static u8 test_fmtu32();
 static u8 test_fmtu64();
 static u8 test_fmtchar();
+
+static u8 test_fmthex();
+static u8 test_fmthexu64();
 static u8 test_invalidverbs();
 static u8 test_customprinter();
 
@@ -113,7 +116,7 @@ static const Testcaseint  i16tests[] = {
     },
     {
         .format     = "%d(i16)",
-        .sprintf    = "%"PRIu16,
+        .sprintf    = "%"PRIi16,
         .u.i16val   = INT16_MIN,
     },
     {
@@ -280,6 +283,44 @@ static const Testcaseint  u64tests[] = {
 };
 
 
+static const Testcaseint  hextests[] = {
+    {
+        .format     = "%x",
+        .sprintf    = "%x",
+        .u.ival     = 255,
+    },
+    {
+        .format     = "%x",
+        .sprintf    = "%x",
+        .u.ival     = 0xa,
+    },
+    {
+        .format     = "%x",
+        .sprintf    = "%x",
+        .u.ival     = 0xa11a,
+    },
+};
+
+
+static const Testcaseint  hexu64tests[] = {
+    {
+        .format     = "%x(u64)",
+        .sprintf    = "%"PRIx64,
+        .u.u64val   = UINT64_MAX,
+    },
+    {
+        .format     = "%x",
+        .sprintf    = "%"PRIx64,
+        .u.ival     = 0xa,
+    },
+    {
+        .format     = "%x",
+        .sprintf    = "%"PRIx64,
+        .u.ival     = 0xa11a,
+    },
+};
+
+
 int
 main()
 {
@@ -301,6 +342,9 @@ main()
         test_fmti32,
         test_fmti64,
 
+        test_fmthex,
+        test_fmthexu64,
+
         test_customprinter,
     };
 
@@ -311,7 +355,7 @@ main()
 
     free(res);
 
-    for (i = 0; i < 9; i++) {
+    for (i = 0; i < nitems(tests); i++) {
         if (slow(tests[i]() != OK)) {
             return 1;
         }
@@ -569,6 +613,54 @@ test_fmti64()
         sprintf(want, tc->sprintf, tc->u.i64val);
 
         ret = assertstr(cfmt(tc->format, tc->u.i64val), want);
+        if (slow(ret != OK)) {
+            return ERR;
+        }
+    }
+
+    return OK;
+}
+
+
+static u8
+test_fmthex()
+{
+    u8                 ret;
+    u32                i;
+    const Testcaseint  *tc;
+    char               want[256];
+
+    for (i = 0; i < nitems(hextests); i++) {
+        tc = &hextests[i];
+
+        memset(want, 0, sizeof(want));
+        sprintf(want, tc->sprintf, tc->u.ival);
+
+        ret = assertstr(cfmt(tc->format, tc->u.ival), want);
+        if (slow(ret != OK)) {
+            return ERR;
+        }
+    }
+
+    return OK;
+}
+
+
+static u8
+test_fmthexu64()
+{
+    u8                 ret;
+    u32                i;
+    const Testcaseint  *tc;
+    char               want[256];
+
+    for (i = 0; i < nitems(hexu64tests); i++) {
+        tc = &hexu64tests[i];
+
+        memset(want, 0, sizeof(want));
+        sprintf(want, tc->sprintf, tc->u.u64val);
+
+        ret = assertstr(cfmt(tc->format, tc->u.u64val), want);
         if (slow(ret != OK)) {
             return ERR;
         }
