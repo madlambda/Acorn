@@ -6,10 +6,14 @@ DIRS=$(ACORN_OBJDIR) $(ACORN_TESTDIR)
 
 SOURCES=mem.c       \
         string.c    \
+        error.c     \
+        array.c     \
         fmt.c       \
         print.c     \
 
-TEST_SOURCES=string_test.c fmt_test.c
+TEST_SOURCES=string_test.c  \
+             fmt_test.c     \
+             array_test.c
 
 OBJECTS=$(patsubst %,$(ACORN_OBJDIR)/%,$(patsubst %.c,%.o,$(SOURCES)))
 TEST_OBJECTS=$(patsubst %,$(ACORN_TESTDIR)/%,$(patsubst %.c,%.o,$(TEST_SOURCES)))

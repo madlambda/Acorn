@@ -35,7 +35,7 @@
 
 
 #define len(s)                                                                \
-    (s->len)
+    ((s) != NULL ? (s)->len : (0))
 
 
 #define strnalloc(s)                                                          \

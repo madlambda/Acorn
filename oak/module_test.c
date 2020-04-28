@@ -1,11 +1,14 @@
-#include <acorn.h>
+/*
+ * Copyright (C) Madlambda Authors.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "array.h"
-#include "error.h"
-#include "file.h"
-#include "module.h"
+
+#include <acorn.h>
+#include <acorn/array.h>
+#include <oak/module.h>
 #include "test.h"
 #include "testdata/ok/empty.h"
 #include "testdata/ok/call1.h"

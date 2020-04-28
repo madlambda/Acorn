@@ -3,8 +3,8 @@
  */
 
 
-#ifndef _OAK_ARRAY_H_
-#define _OAK_ARRAY_H_
+#ifndef _ACORN_ARRAY_H_
+#define _ACORN_ARRAY_H_
 
 
 #define arraylast(array)                                                      \
@@ -31,4 +31,4 @@ u8      arrayset(Array *, u32 index, void *val);
 void    arraydel(Array *, u32 index);
 Array   *shrinkarray(Array *old);
 
-#endif /* _OAK_ARRAY_H_ */
+#endif /* _ACORN_ARRAY_H_ */

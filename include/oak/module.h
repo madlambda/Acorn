@@ -5,6 +5,10 @@
 #ifndef _OAK_MODULE_H_
 #define _OAK_MODULE_H_
 
+
+#include "file.h"
+
+
 typedef enum {
     CustomId = 0,
     TypeId,
@@ -149,5 +153,7 @@ typedef struct {
 
 Error   *loadmodule(Module *, const char *filename);
 void    closemodule(Module *m);
+
+u8      oakfmt(String **buf, u8 **format, void *val);
 
 #endif /* _OAK_MODULE_H_ */

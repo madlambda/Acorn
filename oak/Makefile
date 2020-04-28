@@ -11,16 +11,17 @@ LIBS=$(OBJDIR)/lib/libacorn.a
 
 
 SOURCES=test.c   \
-        error.c  \
         bin.c    \
         file.c   \
-        array.c  \
         module.c \
+        fmt.c    \
 
 
 TEST_SOURCES=   bin_test.c    \
-                module_test.c \
-                array_test.c
+                module_test.c
+
+
+LIBOAK=$(OBJDIR)/lib/liboak.a
 
 
 # <file>.c => $OAK_OBJDIR/<file>.o
@@ -31,7 +32,7 @@ TEST_OBJECTS=$(patsubst %,$(OAK_TESTDIR)/%,$(patsubst %.c,%.o,$(TEST_SOURCES)))
 TEST_PROGRAMS=$(patsubst %test.o,%test,$(TEST_OBJECTS))
 
 
-all: $(DIRS) $(TEST_PROGRAMS) tests
+all: $(DIRS) $(TEST_PROGRAMS) tests $(LIBOAK)
 	@echo done
 
 
@@ -65,3 +66,7 @@ $(OAK_TESTDIR)/%_test.o: %_test.c
 
 $(OAK_TESTDIR)/%_test: $(OAK_TESTDIR)/%_test.o $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) $< -o $@
+
+
+$(LIBOAK): $(OBJECTS)
+	$(AR) rcs $(LIBOAK) $(OBJECTS)

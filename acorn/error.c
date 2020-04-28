@@ -6,8 +6,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include "array.h"
-#include "error.h"
 
 
 static Error *vnewerror(const char *format, va_list args);

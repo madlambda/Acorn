@@ -2,18 +2,17 @@
  * Copyright (C) Madlambda Authors
  */
 
-#include <acorn.h>
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "array.h"
-#include "error.h"
-#include "file.h"
-#include "string.h"
-#include "opcodes.h"
-#include "module.h"
+#include <errno.h>
+
+#include <acorn.h>
+#include <acorn/array.h>
+#include <oak/file.h>
+#include <oak/module.h>
 #include "bin.h"
+#include "opcodes.h"
 
 
 typedef Error *(*Parser)(Module *m, u8 *begin, const u8 *end);
@@ -280,7 +279,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
     expect(begin <= end);
 
-    if (slow(found < count)) {
+    if (slow(found != count)) {
         return ecorruptsect(typesect);
     }
 

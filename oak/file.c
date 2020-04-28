@@ -3,6 +3,8 @@
  */
 
 #include <acorn.h>
+#include <oak/file.h>
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -10,9 +12,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "array.h"
-#include "error.h"
-#include "file.h"
 
 
 u8 *mmapfile(int fd, size_t size, int prot, int flags);
