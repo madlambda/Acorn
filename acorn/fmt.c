@@ -351,9 +351,8 @@ fmtadd(u8 flag, Formatter formatter)
 }
 
 
-#define MAXI64 "-9223372036854775808"
-#define MAXU64 "18446744073709551615"
-#define MAXINTBUF (slength(MAXU64) + 1)
+#define MAXU64      "18446744073709551615"
+#define MAXUINTBUF  (sizeof(MAXU64) - 1)
 
 
 String *
@@ -365,7 +364,7 @@ fmtint(i64 ival, int base)
         return NULL;
     }
 
-    buf = allocstring(slength(MAXI64));
+    buf = allocstring(MAXUINTBUF + 1);
     if (slow(buf == NULL)) {
         return NULL;
     }
@@ -399,27 +398,25 @@ static String *
 fmtuintbuf(String *buf, u64 uval, int base)
 {
     u8      *p, *start, *end;
-    size_t  maxlen, len;
-    u8      tmp[slength(MAXU64)];
+    size_t  len;
+    u8      tmp[MAXUINTBUF];
 
     static const u8  hex[] = "0123456789abcdef";
 
     expect(base == 10 || base == 16);
 
-    maxlen = slength(MAXU64);
-
-    if (slow((strnalloc(buf) - len(buf)) < maxlen)) {
+    if (slow((strnalloc(buf) - len(buf)) < MAXUINTBUF)) {
         return NULL;
     }
 
-    p = offset(tmp, maxlen);
+    p = offset(tmp, MAXUINTBUF);
 
     do {
         *(--p) = (u8) (base == 10 ? (uval % base + '0') : hex[uval & 0xF]);
         uval /= base;
     } while (uval != 0);
 
-    len = (tmp + maxlen) - p;
+    len = (tmp + MAXUINTBUF) - p;
     start = (buf->start + buf->len);
     end = start + len;
 
@@ -440,7 +437,7 @@ static u8
 wrongfmt(String **buf, u8 **format, void * unused(val))
 {
     u8    *fmt, *pfmt, *pv;
-    char  verberr[slength(Einvalidverb) + slength("(u64)") + 1];
+    char  verberr[sizeof(Einvalidverb) + slength("(u64)")];
 
     fmt = pfmt = *format;
     pv = copy(verberr, Einvalidverb, slength(Einvalidverb));
@@ -489,7 +486,7 @@ baseintfmt(int base, String **buf, u8 ** format, void *val)
     u64     uval;
     ptr     p;
     String  sintbuf;
-    u8      intbuf[MAXINTBUF];
+    u8      intbuf[MAXUINTBUF + 1]; /* accounts for '-' */
 
     sintbuf.len = 0;
     sintbuf.nalloc = sizeof(intbuf);
