@@ -2,11 +2,10 @@
  * Copyright (C) Madlambda Authors
  */
 
-#include <acorn.h>
 #include <stdio.h>
-#include "test.h"
-#include "array.h"
-#include "error.h"
+
+#include <acorn.h>
+#include <acorn/array.h>
 
 
 static Error *test_u8array();

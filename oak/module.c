@@ -2,18 +2,17 @@
  * Copyright (C) Madlambda Authors
  */
 
-#include <acorn.h>
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "array.h"
-#include "error.h"
-#include "file.h"
-#include "string.h"
-#include "opcodes.h"
-#include "module.h"
+#include <errno.h>
+
+#include <acorn.h>
+#include <acorn/array.h>
+#include <oak/file.h>
+#include <oak/module.h>
 #include "bin.h"
+#include "opcodes.h"
 
 
 typedef Error *(*Parser)(Module *m, u8 *begin, const u8 *end);
@@ -199,7 +198,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
     u32       found, count, paramcount, retcount, u32val;
     u64       i;
     Type      value;
-    FuncDecl  func;
+    TypeDecl  type;
 
     if (slow(m->types != NULL)) {
         return edupsect(typesect);
@@ -211,7 +210,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
     found = 0;
 
-    m->types = newarray(count, sizeof(FuncDecl));
+    m->types = newarray(count, sizeof(TypeDecl));
     if (slow(m->types == NULL)) {
         return earrayalloc();
     }
@@ -221,9 +220,10 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
             return emalformed("form", typesect);
         }
 
-        memset(&func, 0, sizeof(FuncDecl));
+        memset(&type, 0, sizeof(TypeDecl));
 
-        func.form = (Type) -i8val;
+        type.index = len(m->types);
+        type.form = (Type) -i8val;
 
         if (slow(u32vdecode(&begin, end, &u32val) != OK)) {
             return emalformed("param_count", typesect);
@@ -231,8 +231,8 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
         paramcount = u32val;
 
-        func.params = newarray(paramcount, sizeof(Type));
-        if (slow(func.params == NULL)) {
+        type.params = newarray(paramcount, sizeof(Type));
+        if (slow(type.params == NULL)) {
             return earrayalloc();
         }
 
@@ -243,7 +243,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
             value = -i8val;
 
-            if (slow(arrayadd(func.params, &value) != OK)) {
+            if (slow(arrayadd(type.params, &value) != OK)) {
                 return earrayadd();
             }
         }
@@ -254,8 +254,8 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
         retcount = u8val;
 
-        func.rets = newarray(retcount, sizeof(Type));
-        if (slow(func.rets == NULL)) {
+        type.rets = newarray(retcount, sizeof(Type));
+        if (slow(type.rets == NULL)) {
             return earrayalloc();
         }
 
@@ -266,12 +266,12 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
             value = -i8val;
 
-            if (slow(arrayadd(func.params, &value) != OK)) {
+            if (slow(arrayadd(type.params, &value) != OK)) {
                 return earrayadd();
             }
         }
 
-        if (slow(arrayadd(m->types, &func) != OK)) {
+        if (slow(arrayadd(m->types, &type) != OK)) {
             return earrayadd();
         }
 
@@ -280,7 +280,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
     expect(begin <= end);
 
-    if (slow(found < count)) {
+    if (slow(found != count)) {
         return ecorruptsect(typesect);
     }
 
@@ -293,7 +293,7 @@ parseimports(Module *m, u8 *begin, const u8 *end)
 {
     u8          u8val;
     u32         i, u32val, nimports;
-    FuncDecl    *f;
+    TypeDecl    *type;
     ImportDecl  import;
 
     if (slow(m->imports != NULL)) {
@@ -350,12 +350,12 @@ parseimports(Module *m, u8 *begin, const u8 *end)
 
         switch (import.kind) {
         case Function:
-            f = arrayget(m->types, u8val);
-            if (slow(f == NULL)) {
+            type = arrayget(m->types, u8val);
+            if (slow(type == NULL)) {
                 return newerror("import section references unknown function");
             }
 
-            import.u.function = *f;
+            import.u.type = *type;
             break;
 
         default:
@@ -375,7 +375,8 @@ static Error *
 parsefunctions(Module *m, u8 *begin, const u8 *end)
 {
     u32       count, uval;
-    FuncDecl  *f;
+    FuncDecl  f;
+    TypeDecl  *type;
 
     if (slow(m->funcs != NULL)) {
         return edupsect(functionsect);
@@ -395,12 +396,14 @@ parsefunctions(Module *m, u8 *begin, const u8 *end)
             return ecorruptsect(functionsect);
         }
 
-        f = arrayget(m->types, uval);
-        if (slow(f == NULL)) {
+        type = arrayget(m->types, uval);
+        if (slow(type == NULL)) {
             return newerror("type \"%d\" not found", uval);
         }
 
-        if (slow(arrayadd(m->funcs, f) != OK)) {
+        f.type = *type;
+
+        if (slow(arrayadd(m->funcs, &f) != OK)) {
             return earrayadd();
         }
     }
@@ -595,6 +598,8 @@ static Error *
 parseexports(Module *m, u8 *begin, const u8 *end)
 {
     u32         count, uval;
+    TypeDecl    *type;
+    GlobalDecl  *global;
     ExportDecl  export;
 
     if (slow(m->exports != NULL)) {
@@ -628,8 +633,31 @@ parseexports(Module *m, u8 *begin, const u8 *end)
 
         export.kind = (u8) *begin++;
 
-        if (slow(u32vdecode(&begin, end, &export.index) != OK)) {
+        if (slow(u32vdecode(&begin, end, &uval) != OK)) {
             return emalformed("index", exportsect);
+        }
+
+        switch (export.kind) {
+        case Function:
+            type = arrayget(m->types, uval);
+            if (slow(type == NULL)) {
+                return newerror("export type %d not found", uval);
+            }
+
+            export.u.type = *type;
+            break;
+
+        case Global:
+            global = arrayget(m->globals, uval);
+            if (slow(global == NULL)) {
+                return newerror("export global %d not found", uval);
+            }
+
+            export.u.global = *global;
+            break;
+
+        default:
+            return newerror("export of kind %d not implemented", export.kind);
         }
 
         if (slow(arrayadd(m->exports, &export) != OK)) {
@@ -856,7 +884,7 @@ closemodule(Module *m)
 {
     u32         i;
     CodeDecl    *code;
-    FuncDecl    *f;
+    TypeDecl    *type;
     ImportDecl  *import;
     ExportDecl  *export;
 
@@ -869,14 +897,14 @@ closemodule(Module *m)
 
     if (m->types) {
         for (i = 0; i < len(m->types); i++) {
-            f = arrayget(m->types, i);
+            type = arrayget(m->types, i);
 
-            if (f->params) {
-                freearray(f->params);
+            if (type->params) {
+                freearray(type->params);
             }
 
-            if (f->rets) {
-                freearray(f->rets);
+            if (type->rets) {
+                freearray(type->rets);
             }
         }
         freearray(m->types);

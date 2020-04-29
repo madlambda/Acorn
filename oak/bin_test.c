@@ -1,10 +1,12 @@
-#include <acorn.h>
+/*
+ * Copyright (C) Madlambda Authors.
+ */
+
 #include <sys/types.h>
 #include <stdlib.h>
 
+#include <acorn.h>
 #include "bin.h"
-#include "array.h"
-#include "error.h"
 #include "test.h"
 
 

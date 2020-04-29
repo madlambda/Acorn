@@ -8,12 +8,13 @@ LIBDIR=$LIBDIR
 INCDIR=$INCDIR
 
 OBJDIR=$OBJDIR
+OBJCMDDIR=$OBJCMDDIR
 END
 
 cat << END > Makefile
 include common.mk
 
-all: acorn oak
+all: acorn oak cmd
 
 .PHONY: acorn
 acorn:
@@ -22,6 +23,10 @@ acorn:
 .PHONY: oak
 oak:
 	\$(MAKE) -C oak
+
+.PHONY: cmd
+cmd:
+	@for c in cmd/*; do \$(MAKE) -C \$\$c; done
 
 .PHONY: clean
 clean:

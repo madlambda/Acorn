@@ -2,11 +2,9 @@
  * Copyright (C) Madlambda Authors.
  */
 
+#include <sys/types.h>
 
 #include <acorn.h>
-#include <sys/types.h>
-#include <inttypes.h>
-
 #include "bin.h"
 
 

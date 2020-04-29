@@ -5,6 +5,10 @@
 #ifndef _OAK_MODULE_H_
 #define _OAK_MODULE_H_
 
+
+#include "file.h"
+
+
 typedef enum {
     CustomId = 0,
     TypeId,
@@ -48,6 +52,12 @@ typedef enum {
 } ExternalKind;
 
 
+/*
+ * Avoid back pointers between structures because Array item pointers can
+ * move around.
+ */
+
+
 typedef struct {
     u32             flags;      /* 1-bit in MVP */
     u32             initial;
@@ -56,9 +66,15 @@ typedef struct {
 
 
 typedef struct {
+    u32             index;
     Type            form;
     Array           *params;    /* of Type */
     Array           *rets;      /* of Type */
+} TypeDecl;
+
+
+typedef struct {
+    TypeDecl        type;
 } FuncDecl;
 
 
@@ -68,16 +84,9 @@ typedef struct {
     ExternalKind    kind;
 
     union {
-        FuncDecl    function;
+        TypeDecl    type;
     } u;
 } ImportDecl;
-
-
-typedef struct {
-    String          *field;
-    ExternalKind    kind;
-    u32             index;      /* index into the kind index space */
-} ExportDecl;
 
 
 typedef struct {
@@ -107,6 +116,16 @@ typedef struct {
         u64         f64val;
     } u;
 } GlobalDecl;
+
+
+typedef struct {
+    String          *field;
+    ExternalKind    kind;
+    union {
+        TypeDecl    type;
+        GlobalDecl  global;
+    } u;
+} ExportDecl;
 
 
 typedef struct {
@@ -149,5 +168,7 @@ typedef struct {
 
 Error   *loadmodule(Module *, const char *filename);
 void    closemodule(Module *m);
+
+u8      oakfmt(String **buf, u8 **format, void *val);
 
 #endif /* _OAK_MODULE_H_ */

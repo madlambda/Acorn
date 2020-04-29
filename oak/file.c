@@ -3,6 +3,8 @@
  */
 
 #include <acorn.h>
+#include <oak/file.h>
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -10,9 +12,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "array.h"
-#include "error.h"
-#include "file.h"
 
 
 u8 *mmapfile(int fd, size_t size, int prot, int flags);
@@ -26,11 +25,11 @@ openfile(File *file, const char *filename)
 
     file->fd = open(filename, O_RDONLY, 0);
     if (slow(file->fd < 0)) {
-        return error(NULL, "failed to open \"%s\": %s", filename, strerror(errno));
+        return newerror("failed to open \"%s\": %s", filename, strerror(errno));
     }
 
     if (slow(fstat(file->fd, &st) < 0)) {
-        err = error(NULL, "failed to stat file: %s", strerror(errno));
+        err = newerror("failed to stat file: %s", strerror(errno));
         goto fail;
     }
 
@@ -38,7 +37,7 @@ openfile(File *file, const char *filename)
 
     file->data = mmapfile(file->fd, file->size, PROT_READ, MAP_PRIVATE);
     if (slow(file->data == NULL)) {
-        err = error(NULL, "failed to mmap file: %s", strerror(errno));
+        err = newerror("failed to mmap file: %s", strerror(errno));
         goto fail;
     }
 

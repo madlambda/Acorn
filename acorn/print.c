@@ -31,9 +31,10 @@ cprint(const char *format, ...)
     s = cvfmt(format, args);
     va_end(args);
 
-    print(s);
-
-    free(s);
+    if (fast(s != NULL)) {
+        print(s);
+        free(s);
+    }
 }
 
 

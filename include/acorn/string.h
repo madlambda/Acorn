@@ -16,7 +16,7 @@
 
 /* slow :: 3*O(n) */
 #define cstringcmp(s, cstr)                                                   \
-    (s->len == strlen(cstr) ? memcmp(s->start, cstr, strlen(cstr)) == 0 : 0)
+    ((s)->len == strlen(cstr) ? memcmp((s)->start, cstr, strlen(cstr)) == 0 : 0)
 
 
 #define newcstring(s)                                                         \
@@ -29,13 +29,13 @@
 
 #define cstr(s, str)                                                          \
     do {                                                                      \
-        s->start = str;                                                       \
-        s->len = strlen(str);                                                 \
+        (s)->start = str;                                                     \
+        (s)->len = strlen((const char *) str);                                \
     } while (0)
 
 
 #define len(s)                                                                \
-    (s->len)
+    ((s) != NULL ? (s)->len : (0))
 
 
 #define strnalloc(s)                                                          \

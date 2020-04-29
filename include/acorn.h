@@ -60,6 +60,7 @@ void    *zmalloc(size_t size);
 
 
 #include <acorn/string.h>
+#include <acorn/error.h>
 #include <acorn/fmt.h>
 
 

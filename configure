@@ -23,9 +23,10 @@ INCDIR="include"
 TMPDIR="tmp"
 BASEDIR=`pwd`
 OBJDIR=$BASEDIR/build
+OBJCMDDIR=$OBJDIR/cmd
 
 rm -rf "$OBJDIR" Makefile common.mk
-mkdir -p "$OBJDIR" "$OBJDIR/lib"
+mkdir -p "$OBJDIR" "$OBJDIR/lib" "$OBJDIR/bin" "$OBJCMDDIR"
 
 OS=Unknown
 

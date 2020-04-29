@@ -2,8 +2,8 @@
  * Copyright (C) Madlambda Authors
  */
 
-#ifndef _OAK_ERROR_H_
-#define _OAK_ERROR_H_
+#ifndef _ACORN_ERROR_H_
+#define _ACORN_ERROR_H_
 
 
 typedef struct Error {
@@ -23,4 +23,4 @@ u8      iserror(Error *, const char *errmsg);
 u8      errorfmt(String **buf, u8 **format, void *val);
 
 
-#endif /* _OAK_ERROR_H_ */
+#endif /* _ACORN_ERROR_H_ */

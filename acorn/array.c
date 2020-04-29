@@ -3,9 +3,9 @@
  */
 
 #include <acorn.h>
+#include <acorn/array.h>
 #include <stdlib.h>
 #include <string.h>
-#include "array.h"
 
 
 static u8 grow(Array *array);
