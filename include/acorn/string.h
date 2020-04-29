@@ -29,8 +29,8 @@
 
 #define cstr(s, str)                                                          \
     do {                                                                      \
-        (s)->start = str;                                                       \
-        (s)->len = strlen((const char *) str);                                                 \
+        (s)->start = str;                                                     \
+        (s)->len = strlen((const char *) str);                                \
     } while (0)
 
 
