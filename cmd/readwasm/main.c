@@ -22,51 +22,43 @@ static ExportDecl *searchexport(Module *m, String *field);
 int
 main(int argc, char **argv)
 {
-    Error       *err;
-    const char  *filename, *opt;
-
-    if (slow(argc < 2)) {
-        cprint("usage: %s <wasm binary>\n", *argv);
-        return 1;
-    }
+    u8     export;
+    char   *s;
+    Error  *err;
 
     fmtadd('e', errorfmt);
     fmtadd('o', oakfmt);
 
-    filename = argv[1];
+    export = 0;
 
-    if (argc > 2) {
-        opt = argv[2];
-
-        if (slow(*opt != '-')) {
-            cprint("invalid argument: %s\n", opt);
-            return 1;
-        }
-
-        opt++;
-
-        switch (*opt) {
-        case 'e':
-            if (slow(argc < 4)) {
-                cprint("param -e needs a function name\n");
-                return 1;
+    while (--argc > 0 && (++argv)[0][0] == '-') {
+        for (s = argv[0] + 1; *s != '\0'; s++) {
+            switch (*s) {
+            case 'e':
+                export = 1;
+                break;
+            default:
+                cprint("Illegal option %c\n", *s);
+                argc = 0;
+                break;
             }
-
-            err = showexport(filename, argv[3]);
-            break;
-
-        default:
-            cprint("invalid argument: %s\n", *opt);
-            return 1;
         }
+    }
+
+    if (slow(argc < 1)) {
+        cprint("usage: readwasm [-e exportname] <filename>\n");
+        return 1;
+    }
+
+    if (export) {
+        err = showexport(argv[1], argv[0]);
 
     } else {
-        err = show(argv[1]);
+        err = show(argv[0]);
     }
 
     if (slow(err != NULL)) {
         cprint("error: %e\n", err);
-
         errorfree(err);
         return 1;
     }
