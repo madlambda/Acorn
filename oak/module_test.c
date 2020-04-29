@@ -252,14 +252,19 @@ static Error *
 asserttypedecl(const void *gotv, const void *wantv)
 {
     Error           *err;
-    const FuncDecl  *got, *want;
+    const TypeDecl  *got, *want;
 
     got = gotv;
     want = wantv;
 
     if (slow(got->form != want->form)) {
-        return newerror("funcdecl form mismatch (%x != %x)",
+        return newerror("typedecl form mismatch (%x != %x)",
                         got->form, want->form);
+    }
+
+    if (slow(got->index != want->index)) {
+        return newerror("typedecl index mismatch (%d != %d)",
+                        got->index, want->index);
     }
 
     err = assertarray(got->params, want->params, "params", asserttype);
@@ -318,7 +323,7 @@ assertimportdecl(const void *gotv, const void *wantv)
 
     switch (want->kind) {
     case Function:
-        return asserttypedecl(&got->u.function, &want->u.function);
+        return asserttypedecl(&got->u.type, &want->u.type);
         break;
     default:
         return newerror("import data not implemented for %d", want->kind);
@@ -428,10 +433,15 @@ assertexportdecl(const void *gotv, const void *wantv)
                         got->kind, want->kind);
     }
 
-    if (slow(got->index != want->index)) {
-        return newerror("import index mismatch (%d != %d)",
-                        got->index, want->index);
+    switch (got->kind) {
+    case Function:
+        return asserttypedecl(&got->u.type, &want->u.type);
+    case Global:
+        return assertglobaldecl(&got->u.global, &want->u.global);
+    default:
+        return newerror("unexpected kind %d", got->kind);
     }
+
 
     return NULL;
 }

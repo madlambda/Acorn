@@ -3,6 +3,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <acorn.h>
 #include <acorn/array.h>
@@ -13,13 +14,16 @@
     (s->data - (m)->file.data)
 
 
-static Error *run(const char *filename);
+static Error *show(const char *filename);
+static Error *showexport(const char *filename, char *fn);
+static ExportDecl *searchexport(Module *m, String *field);
 
 
 int
 main(int argc, char **argv)
 {
-    Error  *err;
+    Error       *err;
+    const char  *filename, *opt;
 
     if (slow(argc < 2)) {
         cprint("usage: %s <wasm binary>\n", *argv);
@@ -29,7 +33,37 @@ main(int argc, char **argv)
     fmtadd('e', errorfmt);
     fmtadd('o', oakfmt);
 
-    err = run(argv[1]);
+    filename = argv[1];
+
+    if (argc > 2) {
+        opt = argv[2];
+
+        if (slow(*opt != '-')) {
+            cprint("invalid argument: %s\n", opt);
+            return 1;
+        }
+
+        opt++;
+
+        switch (*opt) {
+        case 'e':
+            if (slow(argc < 4)) {
+                cprint("param -e needs a function name\n");
+                return 1;
+            }
+
+            err = showexport(filename, argv[3]);
+            break;
+
+        default:
+            cprint("invalid argument: %s\n", *opt);
+            return 1;
+        }
+
+    } else {
+        err = show(argv[1]);
+    }
+
     if (slow(err != NULL)) {
         cprint("error: %e\n", err);
 
@@ -42,7 +76,7 @@ main(int argc, char **argv)
 
 
 static Error *
-run(const char *filename)
+show(const char *filename)
 {
     u32         i;
     Error       *err;
@@ -50,6 +84,7 @@ run(const char *filename)
     Section     *s;
     FuncDecl    *f;
     ImportDecl  *import;
+    ExportDecl  *export;
 
     err = loadmodule(&m, filename);
     if (slow(err != NULL)) {
@@ -83,7 +118,90 @@ run(const char *filename)
         cprint("\t%d -> %o(import)\n", i, import);
     }
 
+    cprint("\nFunctions (%d):\n", len(m.funcs));
+
+    for (i = 0; i < len(m.funcs); i++) {
+        f = arrayget(m.funcs, i);
+        cprint("\t%d -> %o(func)\n", i, f);
+    }
+
+    cprint("\nExports (%d):\n", len(m.exports));
+
+    for (i = 0; i < len(m.exports); i++) {
+        export = arrayget(m.exports, i);
+        cprint("\t%d -> %o(export)\n", i, export);
+    }
+
     closemodule(&m);
+
+    return NULL;
+}
+
+
+static Error *
+showexport(const char *filename, char *funcname)
+{
+    u32         i;
+    Error       *err;
+    String      field;
+    Module      m;
+    FuncDecl    *fn;
+    CodeDecl    *code;
+    ExportDecl  *export;
+
+    cstr(&field, (u8 *) funcname);
+
+    err = loadmodule(&m, filename);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    export = searchexport(&m, &field);
+    if (slow(export == NULL)) {
+        err = newerror("no export named \"%S\"", &field);
+        goto fail;
+    }
+
+    if (slow(export->kind != Function)) {
+        err = newerror("export is not a function but %o(extkind)", export->kind);
+        goto fail;
+    }
+
+    for (i = 0; i < len(m.funcs); i++) {
+        fn = arrayget(m.funcs, i);
+
+        if (fn->type.index == export->u.type.index) {
+            cprint("found func: %o(func)\n", fn);
+
+            code = arrayget(m.codes, i);
+            if (fast(code != NULL)) {
+                cprint("found code %d\n", i);
+                break;
+            }
+        }
+    }
+
+    err = NULL;
+
+fail:
+
+    closemodule(&m);
+    return err;
+}
+
+
+static ExportDecl *
+searchexport(Module *m, String *field)
+{
+    u32         i;
+    ExportDecl  *export;
+
+    for (i = 0; i < len(m->exports); i++) {
+        export = arrayget(m->exports, i);
+        if (stringcmp(export->field, field)) {
+            return export;
+        }
+    }
 
     return NULL;
 }

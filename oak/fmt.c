@@ -27,15 +27,20 @@ static u8 modulefmt(String **buf, u8 **format, void *val);
 static u8 sectidfmt(String **buf, u8 **format, void *val);
 static u8 funcfmt(String **buf, u8 **format, void *val);
 static u8 typefmt(String **buf, u8 **format, void *val);
+static u8 typedeclfmt(String **buf, u8 **format, void *val);
+static u8 extkindfmt(String **buf, u8 **format, void *val);
 static u8 importfmt(String **buf, u8 **format, void *val);
+static u8 exportfmt(String **buf, u8 **format, void *val);
 
 static const char *typestr(Type t);
+static const char *extkindstr(ExternalKind kind);
 
 
 u8
 oakfmt(String **buf, u8 **format, void *val)
 {
-    u8  *fmt, *p, *end;
+    u8      *fmt, *p, *end;
+    String  typestr;
 
     fmt = *format;
     fmt++;
@@ -54,24 +59,42 @@ oakfmt(String **buf, u8 **format, void *val)
             return ERR;
         }
 
-        if (memcmp("sectid", p, min(6, (end - p))) == 0) {
+        typestr.start = p;
+        typestr.len = (end - p);
+
+        if (cstringcmp(&typestr, "sectid")) {
             *format = fmt;
             return sectidfmt(buf, format, val);
         }
 
-        if (memcmp("type", p, min(4, (end - p))) == 0) {
+        if (cstringcmp(&typestr, "type")) {
             *format = fmt;
             return typefmt(buf, format, val);
         }
 
-        if (memcmp("func", p, min(4, (end - p))) == 0) {
+        if (cstringcmp(&typestr, "typedecl")) {
+            *format = fmt;
+            return typedeclfmt(buf, format, val);
+        }
+
+        if (cstringcmp(&typestr, "extkind")) {
+            *format = fmt;
+            return extkindfmt(buf, format, val);
+        }
+
+        if (cstringcmp(&typestr, "func")) {
             *format = fmt;
             return funcfmt(buf, format, val);
         }
 
-        if (memcmp("import", p, min(6, (end - p))) == 0) {
+        if (cstringcmp(&typestr, "import")) {
             *format = fmt;
             return importfmt(buf, format, val);
+        }
+
+        if (cstringcmp(&typestr, "export")) {
+            *format = fmt;
+            return exportfmt(buf, format, val);
         }
 
         return ERR;
@@ -181,23 +204,34 @@ sectidfmt(String **buf, u8 ** unused(format), void *val)
 static u8
 funcfmt(String **buf, u8 ** unused(format), void *val)
 {
-    u32       i;
-    Type      *t;
     FuncDecl  *f;
 
     f = (FuncDecl *) val;
 
-    *buf = appendcstr(*buf, "(");
+    return typedeclfmt(buf, format, &f->type);
+}
 
-    for (i = 0; i < len(f->params); i++) {
+
+static u8
+typedeclfmt(String **buf, u8 ** unused(format), void *val)
+{
+    u32       i;
+    Type      *t;
+    TypeDecl  *type;
+
+    type = (TypeDecl *) val;
+
+    check(*buf, appendc(*buf, 1, '('));
+
+    for (i = 0; i < len(type->params); i++) {
         if (slow(*buf == NULL)) {
             return ERR;
         }
 
-        t = arrayget(f->params, i);
+        t = arrayget(type->params, i);
         check(*buf, appendcstr(*buf, typestr(*t)));
 
-        if (i < (len(f->params) - 1)) {
+        if (i < (len(type->params) - 1)) {
             *buf = appendc(*buf, 1, ',');
         }
     }
@@ -208,22 +242,22 @@ funcfmt(String **buf, u8 ** unused(format), void *val)
 
     check(*buf, appendc(*buf, 2, ')', ' '));
 
-    if (len(f->rets) == 0) {
+    if (len(type->rets) == 0) {
         check(*buf, appendc(*buf, 3, 'n', 'i', 'l'));
         return OK;
     }
 
     *buf = appendc(*buf, 1, '(');
 
-    for (i = 0; i < len(f->rets); i++) {
+    for (i = 0; i < len(type->rets); i++) {
         if (slow(*buf == NULL)) {
             return ERR;
         }
 
-        t = arrayget(f->rets, i);
+        t = arrayget(type->rets, i);
         check(*buf, appendcstr(*buf, typestr(*t)));
 
-        if (i < (len(f->rets) - 1)) {
+        if (i < (len(type->rets) - 1)) {
             *buf = appendc(*buf, 1, ',');
         }
     }
@@ -251,6 +285,19 @@ typefmt(String **buf, u8 ** unused(format), void *val)
 
 
 static u8
+extkindfmt(String **buf, u8 ** unused(format), void *val)
+{
+    ExternalKind  *kind;
+
+    kind = (ExternalKind *) val;
+
+    check(*buf, appendcstr(*buf, extkindstr(*kind)));
+
+    return OK;
+}
+
+
+static u8
 importfmt(String **buf, u8 ** format, void *val)
 {
     ImportDecl  *import;
@@ -263,11 +310,35 @@ importfmt(String **buf, u8 ** format, void *val)
         check(*buf, appendc(*buf, 1, '.'));
         check(*buf, append(*buf, import->field));
 
-        if (funcfmt(buf, format, &import->u.function) != OK) {
+        if (typedeclfmt(buf, format, &import->u.type) != OK) {
             return ERR;
         }
 
         break;
+    default:
+        check(*buf, appendcstr(*buf, "(not implemented)"));
+    }
+
+    return OK;
+}
+
+
+static u8
+exportfmt(String **buf, u8 ** format, void *val)
+{
+    ExportDecl  *export;
+
+    export = (ExportDecl *) val;
+
+    switch (export->kind) {
+    case Function:
+        check(*buf, append(*buf, export->field));
+        if (typedeclfmt(buf, format, &export->u.type) != OK) {
+            return ERR;
+        }
+
+        break;
+
     default:
         check(*buf, appendcstr(*buf, "(not implemented)"));
     }
@@ -300,6 +371,27 @@ typestr(Type t)
 
     case Emptyblock:
         return "EmptyBlock";
+    }
+
+    return "(unknown)";
+}
+
+
+static const char *
+extkindstr(ExternalKind kind)
+{
+    switch (kind) {
+    case Function:
+        return "Function";
+
+    case Table:
+        return "Table";
+
+    case Memory:
+        return "Memory";
+
+    case Global:
+        return "Global";
     }
 
     return "(unknown)";

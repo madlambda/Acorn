@@ -63,14 +63,14 @@ static Array call1typerets = {
 };
 
 
-static FuncDecl call1typevals[] = {
-    {Func, &call1typeparams1, &call1typerets},
-    {Func, &call1typeparams2, &call1typerets},
+static TypeDecl call1typevals[] = {
+    {0, Func, &call1typeparams1, &call1typerets},
+    {1, Func, &call1typeparams2, &call1typerets},
 };
 
 
 static FuncDecl call1funcvals[] = {
-    {Func, &call1typeparams2, &call1typerets},
+    {.type = {1, Func, &call1typeparams2, &call1typerets}},
 };
 
 
@@ -84,7 +84,7 @@ static Array  call1sects = {
 static Array  call1types = {
     .len        = 2,
     .items      = &call1typevals,
-    .size       = sizeof(FuncDecl),
+    .size       = sizeof(TypeDecl),
 };
 
 
@@ -111,7 +111,7 @@ static ImportDecl  call1importvals = {
     .field      = &call1importfieldname,
     .kind       = Function,
     .u          = {
-        .function = {Func, &call1typeparams1, &call1typerets},
+        .type = {0, Func, &call1typeparams1, &call1typerets},
     },
 };
 
@@ -134,7 +134,7 @@ static ExportDecl  call1exportvals[] = {
     {
         .field  = &call1exportfieldname,
         .kind   = Function,
-        .index  = 1,
+        .u.type  = {1, Func, &call1typeparams2, &call1typerets},
     },
 };
 

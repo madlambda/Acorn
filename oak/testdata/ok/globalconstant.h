@@ -59,7 +59,15 @@ static ExportDecl  globalconstexportvals[] = {
     {
         .field  = &globalconststring,
         .kind   = Global,
-        .index  = 0,
+        .u.global = {
+            .type   = {
+                .type = I32,
+                .mut = 0,
+            },
+            .u = {
+                .i32val = 42,
+            },
+        },
     },
 };
 
