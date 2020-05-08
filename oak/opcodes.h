@@ -7,7 +7,9 @@
 
 
 typedef enum {
-    OpgetGlobal     = 0x23,
+    Opreturn        = 0x0f,
+    Opcall          = 0x10,
+    Opgetglobal     = 0x23,
 
     Opi32const      = 0x41,
     Opi64const,

@@ -247,3 +247,68 @@ u32decode(u8 **begin, const u8 *end, u32 *val)
     *begin += 4;
     return OK;
 }
+
+
+u8
+u16encode(u16 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    if (slow((end - *begin) < 2)) {
+        return ERR;
+    }
+
+    data = *begin;
+
+    data[0] = (val & 0xff);
+    data[1] = (val >> 8) & 0xff;
+
+    *begin += 2;
+    return OK;
+}
+
+
+u8
+u32encode(u32 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    if (slow((end - *begin) < 4)) {
+        return ERR;
+    }
+
+    data = *begin;
+
+    data[0] = (val & 0xff);
+    data[1] = (val >> 8) & 0xff;
+    data[2] = (val >> 16) & 0xff;
+    data[3] = (val >> 24) & 0xff;
+
+    *begin += 4;
+    return OK;
+}
+
+
+u8
+u64encode(u64 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    if (slow((end - *begin) < 8)) {
+        return ERR;
+    }
+
+    data = *begin;
+
+    data[0] = (val & 0xff);
+    data[1] = (val >> 8) & 0xff;
+    data[2] = (val >> 16) & 0xff;
+    data[3] = (val >> 24) & 0xff;
+    data[4] = (val >> 32) & 0xff;
+    data[5] = (val >> 40) & 0xff;
+    data[6] = (val >> 48) & 0xff;
+    data[7] = (val >> 56) & 0xff;
+
+    *begin += 8;
+    return OK;
+}

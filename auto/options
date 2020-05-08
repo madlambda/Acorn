@@ -10,6 +10,7 @@ do
     case "$option" in
         --cc=*)                          CC="$value"                         ;;
         --ld=*)                          LD="$value"                         ;;
+        --as=*)                          AS="$value"                         ;;
         --cc-opt=*)                      CC_OPT="$value"                     ;;
         --ld-opt=*)                      LD_OPT="$value"                     ;;
         --prefix=*)                      PREFIX="$value"                     ;;

@@ -24,7 +24,6 @@
  */
 static u8 wrongfmt(String **buf, u8 **format, void *val);
 static u8 intfmt(String **buf, u8 **format, void *val);
-static u8 hexfmt(String **buf, u8 **format, void *val);
 static u8 charfmt(String **buf, u8 **format, void *val);
 static u8 cstrfmt(String **buf, u8 **format, void *val);
 static u8 stringfmt(String **buf, u8 **format, void *val);
@@ -612,7 +611,7 @@ intfmt(String **buf, u8 ** format, void *val)
 }
 
 
-static u8
+u8
 hexfmt(String **buf, u8 ** format, void *val)
 {
     return baseintfmt(16, buf, format, val);

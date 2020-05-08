@@ -45,10 +45,10 @@ typedef enum {
 
 
 typedef enum {
-    Function = 0,
-    Table,
-    Memory,
-    Global,
+    FunctionKind = 0,
+    TableKind,
+    MemoryKind,
+    GlobalKind,
 } ExternalKind;
 
 
@@ -66,16 +66,11 @@ typedef struct {
 
 
 typedef struct {
-    u32             index;
-    Type            form;
     Array           *params;    /* of Type */
     Array           *rets;      /* of Type */
+    u32             index;
+    Type            form;
 } TypeDecl;
-
-
-typedef struct {
-    TypeDecl        type;
-} FuncDecl;
 
 
 typedef struct {
@@ -154,15 +149,18 @@ typedef struct {
     u32             version;
     u32             start;      /* function index */
     Array           *sects;     /* of Section */
-    Array           *types;     /* of FuncDecl */
+    Array           *types;     /* of TypeDecl */
     Array           *imports;   /* of ImportDecl */
-    Array           *funcs;     /* of FuncDecl */
+    Array           *functypes; /* of TypeDecl */
     Array           *tables;    /* of TableDecl */
     Array           *memories;  /* of MemoryDecl */
     Array           *globals;   /* of GlobalDecl */
     Array           *exports;   /* of ExportDecl */
     Array           *codes;     /* of CodeDecl */
     Array           *datas;     /* of DataDecl */
+
+    /* Compiled fields */
+    Array           *funcs;     /* of Function */
 } Module;
 
 
@@ -170,5 +168,6 @@ Error   *loadmodule(Module *, const char *filename);
 void    closemodule(Module *m);
 
 u8      oakfmt(String **buf, u8 **format, void *val);
+
 
 #endif /* _OAK_MODULE_H_ */

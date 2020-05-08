@@ -11,7 +11,7 @@
 
 
 #define stringcmp(s1, s2)                                                     \
-    (s1->len == s2->len ? memcmp(s1->start, s2->start, s1->len) == 0 : 0)
+    ((s1)->len == (s2)->len ? memcmp((s1)->start, (s2)->start, (s1)->len) == 0 : 0)
 
 
 /* slow :: 3*O(n) */
@@ -29,7 +29,7 @@
 
 #define cstr(s, str)                                                          \
     do {                                                                      \
-        (s)->start = str;                                                     \
+        (s)->start = (u8 *) str;                                                     \
         (s)->len = strlen((const char *) str);                                \
     } while (0)
 

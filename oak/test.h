@@ -6,10 +6,23 @@
 #ifndef _OAK_TEST_H_
 
 
-#define OAK_MAX_ERR_MSG 2048
+typedef struct {
+    u8      *code;
+    u32     size;
+} Binbuf;
 
 
-void *mustalloc(size_t size);
+typedef struct {
+    Binbuf  a;
+    Binbuf  b;
+} Bincmp;
+
+
+void    *mustalloc(size_t size);
+Error   *readelfcode(File *file, Binbuf *data);
+
+u8      fmtjit(String **buf, u8 ** format, void *val);
+u8      fmtjitcmp(String **buf, u8 ** format, void *val);
 
 
 #endif /* _OAK_TEST_H_ */

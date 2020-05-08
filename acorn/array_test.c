@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <acorn.h>
 #include <acorn/array.h>

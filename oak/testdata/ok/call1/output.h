@@ -64,13 +64,28 @@ static Array call1typerets = {
 
 
 static TypeDecl call1typevals[] = {
-    {0, Func, &call1typeparams1, &call1typerets},
-    {1, Func, &call1typeparams2, &call1typerets},
+    {
+        .index = 0, 
+        .form = Func,
+        .params = &call1typeparams1,
+        .rets = &call1typerets,
+    },
+    {
+        .index = 1,
+        .form = Func,
+        .params = &call1typeparams2,
+        .rets = &call1typerets,
+    },
 };
 
 
-static FuncDecl call1funcvals[] = {
-    {.type = {1, Func, &call1typeparams2, &call1typerets}},
+static TypeDecl call1funcvals[] = {
+    {
+        .index = 1,
+        .form = Func,
+        .params = &call1typeparams2,
+        .rets = &call1typerets,
+    },
 };
 
 
@@ -109,9 +124,14 @@ static String  call1exportfieldname = {
 static ImportDecl  call1importvals = {
     .module     = &call1importmodname,
     .field      = &call1importfieldname,
-    .kind       = Function,
+    .kind       = FunctionKind,
     .u          = {
-        .type = {0, Func, &call1typeparams1, &call1typerets},
+        .type = {
+            .index = 0,
+            .form = Func,
+            .params = &call1typeparams1,
+            .rets = &call1typerets,
+        },
     },
 };
 
@@ -123,18 +143,23 @@ static Array  call1imports = {
 };
 
 
-static Array  call1funcs = {
+static Array  call1functypes = {
     .len        = 1,
     .items      = &call1funcvals,
-    .size       = sizeof(FuncDecl),
+    .size       = sizeof(TypeDecl),
 };
 
 
 static ExportDecl  call1exportvals[] = {
     {
         .field  = &call1exportfieldname,
-        .kind   = Function,
-        .u.type  = {1, Func, &call1typeparams2, &call1typerets},
+        .kind   = FunctionKind,
+        .u.type  = {
+            .index = 1,
+            .form = Func,
+            .params = &call1typeparams2,
+            .rets = &call1typerets,
+        },
     },
 };
 
@@ -173,7 +198,7 @@ static Module  call1mod = {
     .sects      = &call1sects,
     .types      = &call1types,
     .imports    = &call1imports,
-    .funcs      = &call1funcs,
+    .functypes  = &call1functypes,
     .tables     = NULL,
     .memories   = NULL,
     .globals    = NULL,

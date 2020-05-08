@@ -10,9 +10,9 @@
 #include <acorn/array.h>
 #include <oak/module.h>
 #include "test.h"
-#include "testdata/ok/empty.h"
-#include "testdata/ok/call1.h"
-#include "testdata/ok/globalconstant.h"
+#include "testdata/ok/empty/output.h"
+#include "testdata/ok/call1/output.h"
+#include "testdata/ok/globalconstant/output.h"
 
 
 typedef struct {
@@ -42,24 +42,24 @@ static Error *assertcodedecl(const void *got, const void *want);
 static Error *assertlocaldecl(const void *gotv, const void *wantv);
 
 
-static const Testcase  invalid_cases[] = {
+static const Testcase  testcases[] = {
     {
         "testdata/invalid/notwasm",
         "WASM must have at least 8 bytes",
         NULL,
     },
     {
-        "testdata/ok/empty.wasm",
+        "testdata/ok/empty/input.wasm",
         NULL,
         &emptymod,
     },
     {
-        "testdata/ok/call1.wasm",
+        "testdata/ok/call1/input.wasm",
         NULL,
         &call1mod,
     },
     {
-        "testdata/ok/globalconstant.wasm",
+        "testdata/ok/globalconstant/input.wasm",
         NULL,
         &globalconstmod,
     },
@@ -73,8 +73,8 @@ int main()
 
     fmtadd('e', errorfmt);
 
-    for (i = 0; i < nitems(invalid_cases); i++) {
-        err = test_module(&invalid_cases[i]);
+    for (i = 0; i < nitems(testcases); i++) {
+        err = test_module(&testcases[i]);
         if (slow(err != NULL)) {
             cprint("[error] %e\n", err);
             errorfree(err);
@@ -145,7 +145,7 @@ assertmodule(const Module *m1, const Module *m2)
         return err;
     }
 
-    err = assertarray(m1->funcs, m2->funcs, "funcs", asserttypedecl);
+    err = assertarray(m1->functypes, m2->functypes, "funcs", asserttypedecl);
     if (slow(err != NULL)) {
         return err;
     }
@@ -322,7 +322,7 @@ assertimportdecl(const void *gotv, const void *wantv)
     }
 
     switch (want->kind) {
-    case Function:
+    case FunctionKind:
         return asserttypedecl(&got->u.type, &want->u.type);
         break;
     default:
@@ -434,9 +434,9 @@ assertexportdecl(const void *gotv, const void *wantv)
     }
 
     switch (got->kind) {
-    case Function:
+    case FunctionKind:
         return asserttypedecl(&got->u.type, &want->u.type);
-    case Global:
+    case GlobalKind:
         return assertglobaldecl(&got->u.global, &want->u.global);
     default:
         return newerror("unexpected kind %d", got->kind);

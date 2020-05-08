@@ -20,11 +20,11 @@
 
 
 #define slow(expr)                                                            \
-    __builtin_expect((long) (expr), 0)
+    __builtin_expect(!!(expr), 0)
 
 
 #define fast(expr)                                                            \
-    __builtin_expect((long) (expr), 1)
+    __builtin_expect(!!(expr), 1)
 
 
 #define offset(p, offset)                                                     \
