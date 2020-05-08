@@ -191,7 +191,8 @@ x64compile(Module *m, Function *fn)
         return err;
     }
 
-    fn->fn = (Funcall) j->data;
+    /* GCC erroneusly forbids cast of data to func pointers with -pedantic. */
+    memcpy((void *)((ptr) fn->fn), j->data, sizeof(ptr));
     return NULL;
 }
 
