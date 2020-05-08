@@ -19,7 +19,7 @@ typedef struct {
 
 
 void    *mustalloc(size_t size);
-Error   *readelfcode(File *file, Binbuf *data);
+Error   *readbinary(File *file, Binbuf *data);
 
 u8      fmtjit(String **buf, u8 ** format, void *val);
 u8      fmtjitcmp(String **buf, u8 ** format, void *val);

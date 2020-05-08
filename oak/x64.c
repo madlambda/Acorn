@@ -370,21 +370,8 @@ movmemreg(Jitfn *j, Jitvalue *args)
     case EDI:
         checkaddr(args->src.u64val, UINT32_MAX);
 
-        if (args->src.u64val <= 0x7fffffff) {
-            /* pick a small instruction for small address */
-
-            *j->begin++ = 0x8b;
-            goto movl;
-
-        }
-
-        *j->begin++ = 0xa1 + regn;
-
-        if (slow(u64encode(args->src.u64val, &j->begin, j->end) != OK)) {
-            return newerror("failed to encode mov immediate 3");
-        }
-
-        break;
+        *j->begin++ = 0x8b;
+        goto movl;
 
     case RAX:
     case RCX:

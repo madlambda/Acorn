@@ -14,7 +14,11 @@
 #include <sys/mman.h>
 
 
+#if defined(__APPLE__)
+#define DEFAULTSIZE 4096
+#else
 #define DEFAULTSIZE 1024
+#endif
 
 
 static Error *initblock(Block *block, u32 nitems);
@@ -49,7 +53,7 @@ compile(Module *m)
         initblock(&block, 10);
         arrayadd(fn.jitfn.blocks, &block);
 
-        err = allocrw(&fn.jitfn);
+        err = allocrw(&fn.jitfn, DEFAULTSIZE);
         if (slow(err != NULL)) {
             return newerror("compiling: %e", err);
         }
@@ -135,9 +139,9 @@ encodeblock(Jitfn *jit, Block *block)
 
 
 Error *
-allocrw(Jitfn *j)
+allocrw(Jitfn *j, size_t size)
 {
-    j->data = mmap(0, DEFAULTSIZE, PROT_READ | PROT_WRITE,
+    j->data = mmap(0, size, PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     if (slow(j->data == MAP_FAILED)) {
@@ -164,12 +168,35 @@ reallocrw(Jitfn *j)
 
     offset = (j->begin - j->data);
 
+#if defined(__APPLE__)
+
+    u8      *oldptr;
+    size_t  oldsize;
+    Error   *err;
+
+    oldptr = j->data;
+    oldsize = j->size;
+
+    err = allocrw(j, j->size + DEFAULTSIZE);
+    if (slow(err != NULL)) {
+        return error(err, "failed to realloc(%d)", j->size + DEFAULTSIZE);
+    }
+
+    memcpy(j->data, oldptr, oldsize);
+
+    munmap(oldptr, oldsize);
+
+#else
+
     j->data = mremap(j->data, j->size, j->size + DEFAULTSIZE, MREMAP_MAYMOVE);
     if (slow(j->data == MAP_FAILED)) {
         return newerror("mremap(%d): %s", j->size + DEFAULTSIZE, strerror(errno));
     }
 
     j->size = j->size + DEFAULTSIZE;
+
+#endif
+
     j->begin = (j->data + offset);
     j->end = (j->data + j->size);
 

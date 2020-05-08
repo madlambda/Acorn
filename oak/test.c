@@ -7,11 +7,19 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+
+
+#if defined(__APPLE__)
+#include <mach-o/loader.h>
+#include <mach-o/swap.h>
+#else
 #include <elf.h>
 #include <link.h>
+#endif
 
 #include <oak/file.h>
 #include "test.h"
+#include "bin.h"
 
 
 /*
@@ -96,8 +104,58 @@ fmtjitcmp(String **buf, u8 ** format, void *ptrval)
 }
 
 
+#if defined(__APPLE__)
+
+
 Error *
-readelfcode(File *file, Binbuf *data)
+readbinary(File *file, Binbuf *data)
+{
+    u8                         *begin, *end;
+    u32                        i;
+    struct load_command        *cmd;
+    struct mach_header_64      *hdr;
+    struct segment_command_64  *segment;
+
+    begin = file->data;
+    end = (begin + file->size);
+
+    hdr = (struct mach_header_64*) begin;
+
+    if (slow(hdr->magic != MH_MAGIC_64)) {
+        return newerror("unexpected magic number: %x", hdr->magic);
+    }
+
+    if (slow((u32)(end - begin) < sizeof(struct mach_header_64))) {
+        return newerror("corrupted MACH-O file");
+    }
+
+    begin += sizeof(struct mach_header_64);
+
+    for (i = 0; i < hdr->ncmds; i++) {
+        cmd = (struct load_command *) begin;
+
+        if (cmd->cmd == LC_SEGMENT_64 || cmd->cmd == LC_SEGMENT) {
+            segment = (struct segment_command_64 *) begin;
+
+            if (strcmp(segment->segname, "__TEXT")) {
+                data->code = (file->data + segment->fileoff);
+                data->size = segment->filesize;
+                return NULL;
+            }
+        }
+
+        begin += cmd->cmdsize;
+    }
+
+    return newerror("code segment not found");
+}
+
+
+#else
+
+
+Error *
+readbinary(File *file, Binbuf *data)
 {
     u32         i;
     ElfW(Ehdr)  *ehdr;
@@ -130,3 +188,6 @@ readelfcode(File *file, Binbuf *data)
 
     return NULL;
 }
+
+
+#endif

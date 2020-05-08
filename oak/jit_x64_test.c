@@ -29,9 +29,9 @@ static Error *test_mov();
 
 static const Testcase  testcases[] = {
     {
-        input: test_mov,
-        want: "testdata/ok/x64/mov.jit",
-        err: NULL,
+        .input  = test_mov,
+        .want   = "testdata/ok/x64/mov.jit",
+        .err    = NULL,
     },
 };
 
@@ -75,12 +75,12 @@ test(const Testcase *tc)
         return err;
     }
 
-    err = readelfcode(&file, &want);
+    err = readbinary(&file, &want);
     if (slow(err != NULL)) {
         return error(err, "parsing file %s", tc->want);
     }
 
-    err = allocrw(&jit);
+    err = allocrw(&jit, 4096);
     if (slow(err != NULL)) {
         return error(err, "allocating jit data");
     }
@@ -425,12 +425,6 @@ test_mov(Jitfn *jit)
     }
 
     memreg(&arg, 0x7fffffff, EAX);
-    err = mov(jit, &arg);
-    if (slow(err != NULL)) {
-        return err;
-    }
-
-    memreg(&arg, 0xdeadbeef, EAX);
     err = mov(jit, &arg);
     if (slow(err != NULL)) {
         return err;

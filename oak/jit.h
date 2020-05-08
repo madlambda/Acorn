@@ -70,7 +70,7 @@ struct sFunction {
 Error   *compile(Module *m);
 Error   *encodeblock();
 Error   *x64compile(Module *m, Function *f);
-Error   *allocrw(Jitfn *j);
+Error   *allocrw(Jitfn *j, size_t size);
 Error   *reallocrw(Jitfn *j);
 Error   *mkexec(Jitfn *j);
 void    freejit(Jitfn *j);

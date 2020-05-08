@@ -99,7 +99,7 @@ test_jit(Testcase *tc)
         return err;
     }
 
-    err = readelfcode(&file, &want);
+    err = readbinary(&file, &want);
     if (slow(err != NULL)) {
         return err;
     }

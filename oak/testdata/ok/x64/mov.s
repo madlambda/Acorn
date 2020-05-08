@@ -649,11 +649,21 @@ _start:
     mov 0x1, %r14w
     mov 0x1, %r15w
 
-    movabsl 0xdeadbeef, %eax
+    # Binutils Gas assembler encodes the instruction below as movabsl (sign
+    # extending the value) while LLVM assembler encodes it as movl.
+    # We choose the smaller encoding.
+    # mov 0xdeadbeef, %eax
+    .byte 0x8b
+    .byte 0x04
+    .byte 0x25
+    .byte 0xef
+    .byte 0xbe
+    .byte 0xad
+    .byte 0xde
+
     movabsq 0xdeadbeef, %rax
 
     mov 0x7fffffff, %eax
-    mov 0xdeadbeef, %eax
     movabsq 0xffffffffffffffff, %rax
     mov 0x1000, %rax
 
