@@ -46,7 +46,7 @@ ASM_TESTOBJECTS=$(patsubst %.s,%.jit,$(ASM_TESTDATA))
 TEST_PROGRAMS=$(patsubst %test.o,%test,$(TEST_OBJECTS))
 
 
-all: $(DIRS) $(ASM_TESTOBJECTS) $(TEST_PROGRAMS) tests $(LIBOAK)
+all: $(DIRS) clean-objtest $(ASM_TESTOBJECTS) $(TEST_PROGRAMS) tests $(LIBOAK)
 	@echo done
 
 
@@ -87,3 +87,8 @@ $(OAK_TESTDIR)/%_test: $(OAK_TESTDIR)/%_test.o $(OBJECTS)
 
 $(LIBOAK): $(OBJECTS)
 	$(AR) rcs $(LIBOAK) $(OBJECTS)
+
+
+.PHONY: clean-objtest
+clean-objtest:
+	rm -f $(ASM_TESTOBJECTS)

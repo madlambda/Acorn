@@ -64,7 +64,7 @@ initarrayfrom(void *data, u32 n, size_t size, u8 heap)
 inline static void
 arrayzerorange(Array *array, u32 from, u32 to)
 {
-    void  *begin, *end;
+    u8  *begin, *end;
 
     if (from == to) {
         return;
@@ -75,7 +75,7 @@ arrayzerorange(Array *array, u32 from, u32 to)
     begin = offset(array->items, from * array->size);
     end = offset(array->items, (to * array->size) + array->size);
 
-    memset(begin, 0, end - begin);
+    memset(begin, 0, (end - begin));
 }
 
 
