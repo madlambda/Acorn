@@ -148,7 +148,7 @@ allocrw(Jitfn *j, size_t size)
         return newerror("mmap(0, %d): %s", DEFAULTSIZE, strerror(errno));
     }
 
-    j->size = DEFAULTSIZE;
+    j->size = size;
 
     return NULL;
 }

@@ -37,6 +37,11 @@ static const u8 regsizes[LASTREG] = {
 };
 
 
+static const u64 maxusizes[] = {
+    0, UINT8_MAX, UINT16_MAX, 0, UINT32_MAX, 0, 0, 0, UINT64_MAX,
+};
+
+
 Error *
 mov(Jitfn *j, Jitvalue *operands)
 {
@@ -46,6 +51,7 @@ mov(Jitfn *j, Jitvalue *operands)
     case ImmReg:
         return movimmreg(j, operands);
     case MemReg:
+    case RegMem:
         return movmemreg(j, operands);
     case IndReg:
         return movindreg(j, operands);
@@ -321,16 +327,30 @@ movl:
 static Error *
 movmemreg(Jitfn *j, Jitvalue *args)
 {
+    u8     mode;
     Reg    regn;
     Error  *err;
+    Insarg  *r1, *r2;
 
-    expect(args->mode == MemReg);
+    mode = args->mode;
+
+    expect(mode == MemReg || mode == RegMem);
 
     growmem(j);
 
-    regn = args->dst.reg % 8;
+    if (mode == MemReg) {
+        r1 = &args->src;
+        r2 = &args->dst;
 
-    switch (args->dst.reg) {
+        checkaddr(r1->u64val, maxusizes[regsizes[r2->reg] / 8]);
+    } else {
+        r1 = &args->dst;
+        r2 = &args->src;
+    }
+
+    regn = r2->reg % 8;
+
+    switch (r2->reg) {
     case AL:
     case CL:
     case DL:
@@ -339,11 +359,15 @@ movmemreg(Jitfn *j, Jitvalue *args)
     case CH:
     case DH:
     case BH:
-        checkaddr(args->src.u64val, UINT8_MAX);
 
-        *j->begin++ = 0x8a;
+        if (mode == MemReg) {
+            *j->begin++ = 0x8a;
 
-        goto movl;
+        } else {
+            *j->begin++ = 0x88;
+        }
+
+        break;
 
     case AX:
     case CX:
@@ -353,25 +377,16 @@ movmemreg(Jitfn *j, Jitvalue *args)
     case BP:
     case SI:
     case DI:
-        checkaddr(args->src.u64val, INT16_MAX);
-
         *j->begin++ = 0x66;
-        *j->begin++ = 0x8b;
 
-        goto movl;
+        if (mode == MemReg) {
+            *j->begin++ = 0x8b;
 
-    case EAX:
-    case ECX:
-    case EDX:
-    case EBX:
-    case ESP:
-    case EBP:
-    case ESI:
-    case EDI:
-        checkaddr(args->src.u64val, UINT32_MAX);
+        } else {
+            *j->begin++ = 0x89;
+        }
 
-        *j->begin++ = 0x8b;
-        goto movl;
+        break;
 
     case RAX:
     case RCX:
@@ -381,22 +396,37 @@ movmemreg(Jitfn *j, Jitvalue *args)
     case RBP:
     case RSI:
     case RDI:
+
         *j->begin++ = rex(1, 0, 0, 0);
 
-        if (args->src.u64val > INT32_MAX && args->dst.reg == RAX) {
+        if (mode == MemReg && r1->u64val > INT32_MAX && r2->reg == RAX) {
             /* use movabsq */
             *j->begin++ = 0xa1 + regn;
-            if (slow(u64encode(args->src.u64val, &j->begin, j->end) != OK)) {
+            if (slow(u64encode(r1->u64val, &j->begin, j->end) != OK)) {
                 return newerror("failed to encode mov immediate 4");
             }
 
-            break;
-
+            return NULL;
         }
 
-        *j->begin++ = 0x8b;
+        /* fall through */
 
-        goto movl;
+    case EAX:
+    case ECX:
+    case EDX:
+    case EBX:
+    case ESP:
+    case EBP:
+    case ESI:
+    case EDI:
+        if (mode == MemReg) {
+            *j->begin++ = 0x8b;
+
+        } else {
+            *j->begin++ = 0x89;
+        }
+
+        break;
 
     case R8:
     case R9:
@@ -406,18 +436,16 @@ movmemreg(Jitfn *j, Jitvalue *args)
     case R13:
     case R14:
     case R15:
-        checkaddr(args->src.u64val, 0x7fffffff);
 
-        *j->begin++ = 0x4c;
-        *j->begin++ = 0x8b;
+        if (mode == MemReg) {
+            checkaddr(r1->u64val, INT32_MAX);
 
-movl:
+            *j->begin++ = rex(1, 1, 0, 0);
+            *j->begin++ = 0x8b;
 
-        *j->begin++ = modrm(0, regn, 4);
-        *j->begin++ = sib(0, 4, 5);
-
-        if (slow(u32encode(args->src.u64val, &j->begin, j->end) != OK)) {
-            return newerror("failed to encode mov immediate");
+        } else {
+            *j->begin++ = rex(1, 1, 0, 0);
+            *j->begin++ = 0x89;
         }
 
         break;
@@ -430,13 +458,17 @@ movl:
     case R13W:
     case R14W:
     case R15W:
-        checkaddr(args->src.u64val, UINT16_MAX);
-
         *j->begin++ = 0x66;
-        *j->begin++ = 0x44;
-        *j->begin++ = 0x8b;
+        *j->begin++ = rex(0, 1, 0, 0);
 
-        goto movl;
+        if (mode == MemReg) {
+            *j->begin++ = 0x8b;
+
+        } else {
+            *j->begin++ = 0x89;
+        }
+
+        break;
 
     case R8D:
     case R9D:
@@ -446,15 +478,26 @@ movl:
     case R13D:
     case R14D:
     case R15D:
-        checkaddr(args->src.u64val, UINT8_MAX);
+        *j->begin++ = rex(0, 1, 0, 0);
 
-        *j->begin++ = 0x44;
-        *j->begin++ = 0x8b;
+        if (mode == MemReg) {
+            *j->begin++ = 0x8b;
 
-        goto movl;
+        } else {
+            *j->begin++ = 0x89;
+        }
+
+        break;
 
     default:
-        return newerror("mov for register %d not implemented", args->dst.reg);
+        return newerror("mov for register %d not implemented", r2->reg);
+    }
+
+    *j->begin++ = modrm(0, regn, 4);
+    *j->begin++ = sib(0, 4, 5);
+
+    if (slow(u32encode(r1->u64val, &j->begin, j->end) != OK)) {
+        return newerror("failed to encode mov immediate");
     }
 
     return NULL;

@@ -1118,3 +1118,131 @@ _start:
     mov 8(%rbp), %rax
     mov 9(%rbp), %rax
     mov -8(%rbp), %rax
+
+    # RegMem
+    mov %al, 0x69
+    mov %cl, 0x69
+    mov %dl, 0x69
+    mov %bl, 0x69
+    mov %ah, 0x69
+    mov %ch, 0x69
+    mov %dh, 0x69
+    mov %bh, 0x69
+
+    mov %ax, 0x69
+    mov %cx, 0x69
+    mov %dx, 0x69
+    mov %bx, 0x69
+    mov %sp, 0x69
+    mov %bp, 0x69
+    mov %si, 0x69
+    mov %di, 0x69
+
+    mov %eax, 0x69
+    mov %ecx, 0x69
+    mov %edx, 0x69
+    mov %ebx, 0x69
+    mov %esp, 0x69
+    mov %ebp, 0x69
+    mov %esi, 0x69
+    mov %edi, 0x69
+
+    mov %rax, 0x69
+    mov %rcx, 0x69
+    mov %rdx, 0x69
+    mov %rbx, 0x69
+    mov %rsp, 0x69
+    mov %rbp, 0x69
+    mov %rsi, 0x69
+    mov %rdi, 0x69
+
+    mov %r8, 0x69
+    mov %r9, 0x69
+    mov %r10, 0x69
+    mov %r11, 0x69
+    mov %r12, 0x69
+    mov %r13, 0x69
+    mov %r14, 0x69
+    mov %r15, 0x69
+
+    mov %r8d, 0x69
+    mov %r9d, 0x69
+    mov %r10d, 0x69
+    mov %r11d, 0x69
+    mov %r12d, 0x69
+    mov %r13d, 0x69
+    mov %r14d, 0x69
+    mov %r15d, 0x69
+
+    mov %r8w, 0x69
+    mov %r9w, 0x69
+    mov %r10w, 0x69
+    mov %r11w, 0x69
+    mov %r12w, 0x69
+    mov %r13w, 0x69
+    mov %r14w, 0x69
+    mov %r15w, 0x69
+
+    mov %al, 0x7fffffff
+    mov %cl, 0x7fffffff
+    mov %dl, 0x7fffffff
+    mov %bl, 0x7fffffff
+    mov %ah, 0x7fffffff
+    mov %ch, 0x7fffffff
+    mov %dh, 0x7fffffff
+    mov %bh, 0x7fffffff
+
+    mov %ax, 0x7fffffff
+    mov %cx, 0x7fffffff
+    mov %dx, 0x7fffffff
+    mov %bx, 0x7fffffff
+    mov %sp, 0x7fffffff
+    mov %bp, 0x7fffffff
+    mov %si, 0x7fffffff
+    mov %di, 0x7fffffff
+
+    mov %eax, 0x7fffffff
+    mov %ecx, 0x7fffffff
+    mov %edx, 0x7fffffff
+    mov %ebx, 0x7fffffff
+    mov %esp, 0x7fffffff
+    mov %ebp, 0x7fffffff
+    mov %esi, 0x7fffffff
+    mov %edi, 0x7fffffff
+
+    mov %rax, 0x7fffffff
+    mov %rcx, 0x7fffffff
+    mov %rdx, 0x7fffffff
+    mov %rbx, 0x7fffffff
+    mov %rsp, 0x7fffffff
+    mov %rbp, 0x7fffffff
+    mov %rsi, 0x7fffffff
+    mov %rdi, 0x7fffffff
+
+    mov %r8, 0x7fffffff
+    mov %r9, 0x7fffffff
+    mov %r10, 0x7fffffff
+    mov %r11, 0x7fffffff
+    mov %r12, 0x7fffffff
+    mov %r13, 0x7fffffff
+    mov %r14, 0x7fffffff
+    mov %r15, 0x7fffffff
+
+    mov %r8d, 0x7fffffff
+    mov %r9d, 0x7fffffff
+    mov %r10d, 0x7fffffff
+    mov %r11d, 0x7fffffff
+    mov %r12d, 0x7fffffff
+    mov %r13d, 0x7fffffff
+    mov %r14d, 0x7fffffff
+    mov %r15d, 0x7fffffff
+
+    mov %r8w, 0x7fffffff
+    mov %r9w, 0x7fffffff
+    mov %r10w, 0x7fffffff
+    mov %r11w, 0x7fffffff
+    mov %r12w, 0x7fffffff
+    mov %r13w, 0x7fffffff
+    mov %r14w, 0x7fffffff
+    mov %r15w, 0x7fffffff
+

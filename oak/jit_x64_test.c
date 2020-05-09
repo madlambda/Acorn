@@ -127,10 +127,16 @@ test(const Testcase *tc)
 	if (count1 > 0 && count2 > 0) {
         printf("\n\tgot asm\t\twant asm:\n");
 		for (j = 0; j < min(count1, count2); j++) {
-			printf("%d: %s %s\t%s %s\n", j, insn1[j].mnemonic, insn1[j].op_str,
+			printf("%d: %s %s\t%s %s\t", j, insn1[j].mnemonic, insn1[j].op_str,
                    insn2[j].mnemonic, insn2[j].op_str);
 
-            if (slow(memcmp(&insn1[j], &insn2[j], sizeof(*insn1)) != 0)) {
+            for (i = 0; i < insn1[j].size; i++) {
+                printf("%x ", insn1[j].bytes[i]);
+            }
+
+            printf("\n");
+
+            if (slow(memcmp(&insn1[j].bytes, &insn2[j].bytes, insn1[j].size) != 0)) {
                 printf("got:\t");
                 for (i = 0; i < insn1[j].size; i++) {
                     printf("%x ", insn1[j].bytes[i]);
@@ -145,6 +151,32 @@ test(const Testcase *tc)
                 break;
             }
 		}
+
+        if (count1 > count2) {
+            printf("Got surplus instructions (%ld)\n", (count1 - count2));
+            for (j = count2; j < count1; j++) {
+			    printf("%d: %s %s\t", j, insn1[j].mnemonic, insn1[j].op_str);
+
+                for (i = 0; i < insn1[j].size; i++) {
+                    printf("%x ", insn1[j].bytes[i]);
+                }
+
+                printf("\n");
+            }
+        }
+
+        if (count2 > count1) {
+            printf("Want more those instructions (%ld)\n", (count2 - count1));
+            for (j = count1; j < count2; j++) {
+			    printf("%d: %s %s\t", j, insn1[j].mnemonic, insn1[j].op_str);
+
+                for (i = 0; i < insn1[j].size; i++) {
+                    printf("%x ", insn1[j].bytes[i]);
+                }
+
+                printf("\n");
+            }
+        }
 
 		cs_free(insn1, count1);
         cs_free(insn2, count2);
@@ -722,6 +754,26 @@ test_mov(Jitfn *jit)
     if (slow(err != NULL)) {
         return err;
     }
+
+    /* RegMem */
+
+    for (i = AL; i < LASTREG; i++) {
+        regmem(&arg, i, 0x69);
+        err = mov(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = AL; i < LASTREG; i++) {
+        regmem(&arg, i, 0x7fffffff);
+        err = mov(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    /* TODO(i4k): test address bigger than INT32_MAX */
 
     return NULL;
 }

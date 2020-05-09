@@ -54,6 +54,14 @@
     } while (0)
 
 
+#define regmem(a, r, mem)                                                     \
+    do {                                                                      \
+        (a)->mode = RegMem;                                                   \
+        (a)->dst.u64val = mem;                                                \
+        (a)->src.reg = r;                                                     \
+    } while (0)
+
+
 #define checkimm(imm, min, max)                                               \
     do {                                                                      \
         if (slow((imm) > (max) || (imm) < (min))) {                           \

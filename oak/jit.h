@@ -11,7 +11,9 @@ typedef enum {
     RegReg,
     ImmReg,     /* Immediate constant */
     MemReg,     /* Immediate direct memory */
-    IndReg,     /* Indirect memory + optional displacement*/
+    IndReg,     /* Indirect memory + optional displacement */
+
+    RegMem,
 } AddressingMode;
 
 
