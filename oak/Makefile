@@ -29,9 +29,10 @@ TEST_SOURCES=   bin_test.c      \
 
 
 
-ASM_TESTDATA=   testdata/ok/call1/output.s \
+ASM_TESTDATA=   testdata/ok/call1/output.s     \
                 testdata/ok/emptyfunc/output.s \
-                testdata/ok/x64/mov.s \
+                testdata/ok/x64/add.s          \
+                testdata/ok/x64/mov.s          \
 
 
 LIBOAK=$(OBJDIR)/lib/liboak.a

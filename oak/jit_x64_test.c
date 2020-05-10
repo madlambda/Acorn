@@ -17,19 +17,25 @@ typedef Error *(*testencoder)(Jitfn *j);
 
 
 typedef struct {
-    testencoder  input;
+    testencoder  testfn;
     const char   *want;
     const char   *err;
 } Testcase;
 
 
 static Error *test(const Testcase *tc);
-static Error *test_mov();
+static Error *test_add(Jitfn *j);
+static Error *test_mov(Jitfn *j);
 
 
 static const Testcase  testcases[] = {
     {
-        .input  = test_mov,
+        .testfn = test_add,
+        .want   = "testdata/ok/x64/add.jit",
+        .err    = NULL,
+    },
+    {
+        .testfn = test_mov,
         .want   = "testdata/ok/x64/mov.jit",
         .err    = NULL,
     },
@@ -88,7 +94,7 @@ test(const Testcase *tc)
     jit.begin = jit.data;
     jit.end = (jit.data + jit.size);
 
-    err = tc->input(&jit);
+    err = tc->testfn(&jit);
     if (slow(err != NULL)) {
         return error(err, "while generating code for %s", tc->want);
     }
@@ -121,8 +127,6 @@ test(const Testcase *tc)
 
 	count1 = cs_disasm(handle1, got.code, got.size, 0x1000, 0, &insn1);
     count2 = cs_disasm(handle2, want.code, want.size, 0x1000, 0, &insn2);
-
-    printf("count1 = %ld, count2 = %ld\n", count1, count2);
 
 	if (count1 > 0 && count2 > 0) {
         printf("\n\tgot asm\t\twant asm:\n");
@@ -168,10 +172,10 @@ test(const Testcase *tc)
         if (count2 > count1) {
             printf("Want more those instructions (%ld)\n", (count2 - count1));
             for (j = count1; j < count2; j++) {
-			    printf("%d: %s %s\t", j, insn1[j].mnemonic, insn1[j].op_str);
+			    printf("%d: %s %s\t", j, insn2[j].mnemonic, insn2[j].op_str);
 
-                for (i = 0; i < insn1[j].size; i++) {
-                    printf("%x ", insn1[j].bytes[i]);
+                for (i = 0; i < insn2[j].size; i++) {
+                    printf("%x ", insn2[j].bytes[i]);
                 }
 
                 printf("\n");
@@ -200,6 +204,141 @@ test(const Testcase *tc)
     closefile(&file);
 
     return err;
+}
+
+
+static Error *
+test_add(Jitfn *jit)
+{
+    u32       i, j;
+    Error     *err;
+    Jitvalue  arg;
+
+    memset(&arg, 0, sizeof(Jitvalue));
+
+    for (i = AL; i <= BH; i++) {
+        for (j = AL; j <= BH; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = AX; i <= DI; i++) {
+        for (j = AX; j <= DI; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = EAX; i <= EDI; i++) {
+        for (j = EAX; j <= EDI; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = RAX; i <= RDI; i++) {
+        for (j = RAX; j <= RDI; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        for (j = R8; j <= R15; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = R8W; i <= R15W; i++) {
+        for (j = R8W; j <= R15W; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        for (j = RAX; j <= RDI; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = AX; i <= DI; i++) {
+        for (j = R8W; j <= R15W; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = R8W; i <= R15W; i++) {
+        for (j = AX; j <= DI; j++) {
+            regreg(&arg, i, j);
+            err = add(jit, &arg);
+            if (slow(err != NULL)) {
+                return err;
+            }
+        }
+    }
+
+    for (i = AL; i <= R15W; i++) {
+        immreg(&arg, 0x1, i);
+        err = add(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = AL; i <= R15W; i++) {
+        immreg(&arg, -0x1337, i);
+        err = add(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    immreg(&arg, 0x7fffffff, EAX);
+    err = add(jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    for (i = AL; i < LASTREG; i++) {
+        immreg(&arg, 0x80000000, i);
+        err = add(jit, &arg);
+        if (slow(err == NULL)) {
+            return newerror("should overflow");
+        }
+
+        errorfree(err);
+    }
+
+    return NULL;
 }
 
 

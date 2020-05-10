@@ -192,7 +192,9 @@ typedef enum {
 } Reg;
 
 
+Error   *add(Jitfn *j, Jitvalue *operands);
 Error   *mov(Jitfn *j, Jitvalue *operands);
+Error   *nop(Jitfn *j, Jitvalue *operands);
 
 
 #endif /* _OAK_X64_H_ */

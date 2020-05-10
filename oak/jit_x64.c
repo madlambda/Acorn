@@ -20,11 +20,11 @@ static Error *prologue(Jitfn *j, Jitvalue *args);
 static Error *epilogue(Jitfn *j, Jitvalue *args);
 static Error *xorregreg(Jitfn *j, Jitvalue *args);
 static Error *funcall(Jitfn *j, Jitvalue *args);
-static Error *add(Jitfn *j, Jitvalue *args);
 static Error *sub(Jitfn *j, Jitvalue *args);
 static Error *movregrsp(Jitfn *j, Jitvalue *args);
 static Error *movimm32regdisp(Jitfn *j, Jitvalue *args);
 static Error *setlocalreg(Jitfn *j, Jitvalue *args);
+
 
 /* emitters push instructions onto blocks */
 static Error *emitprologue(Block *b, u32 *allocsize);
@@ -293,46 +293,6 @@ sub(Jitfn *j, Jitvalue *args)
     memcpy(j->begin, "\x48\x81", 2);
     j->begin += 2;
     *j->begin++ = 0xe8 + args->dst.reg;
-
-    if (slow(u32encode(args->src.i64val, &j->begin, j->end))) {
-        return newerror("failed to encode u32");
-    }
-
-    return NULL;
-}
-
-
-static Error *
-add(Jitfn *j, Jitvalue *args)
-{
-    u8     size;
-    Error  *err;
-
-    if (args->src.i64val < -128 || args->src.i64val > 127) {
-        size = 7;
-    } else {
-        size = 4;
-    }
-
-    if (slow((j->end - j->begin) < size)) {
-        err = reallocrw(j);
-        if (slow(err != NULL)) {
-            return err;
-        }
-    }
-
-    if (size == 4) {
-        memcpy(j->begin, "\x48\x83", 2);
-        j->begin += 2;
-        *j->begin++ = 0xc0 + (u8) args->dst.reg;
-        *j->begin++ = (u8) args->src.i64val;
-
-        return NULL;
-    }
-
-    memcpy(j->begin, "\x48\x81", 2);
-    j->begin += 2;
-    *j->begin++ = 0xc0 + (u8) args->dst.reg;
 
     if (slow(u32encode(args->src.i64val, &j->begin, j->end))) {
         return newerror("failed to encode u32");

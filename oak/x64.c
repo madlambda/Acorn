@@ -17,6 +17,8 @@
 
 
 
+static Error *addregreg(Jitfn *j, Jitvalue *args);
+static Error *addimmreg(Jitfn *j, Jitvalue *args);
 static Error *movregreg(Jitfn *j, Jitvalue *args);
 static Error *movimmreg(Jitfn *j, Jitvalue *args);
 static Error *movmemreg(Jitfn *j, Jitvalue *args);
@@ -37,9 +39,109 @@ static const u8 regsizes[LASTREG] = {
 };
 
 
+static const u8 rexr[LASTREG] = {
+    0, 0, 0, 0, 0, 0, 0, 0, /* AL...BH */
+    0, 0, 0, 0, 0, 0, 0, 0, /* AX...DI */
+    0, 0, 0, 0, 0, 0, 0, 0, /* EAX...EDI */
+    0, 0, 0, 0, 0, 0, 0, 0, /* RAX...RAX */
+    1, 1, 1, 1, 1, 1, 1, 1, /* R8...R15 */
+    1, 1, 1, 1, 1, 1, 1, 1, /* R8D...R15D */
+    1, 1, 1, 1, 1, 1, 1, 1, /* R8W...R15W */
+};
+
+
 static const u64 maxusizes[] = {
     0, UINT8_MAX, UINT16_MAX, 0, UINT32_MAX, 0, 0, 0, UINT64_MAX,
 };
+
+
+Error *
+add(Jitfn *j, Jitvalue *operands)
+{
+    switch (operands->mode) {
+    case RegReg:
+        return addregreg(j, operands);
+    case ImmReg:
+        return addimmreg(j, operands);
+    default:
+        return newerror("addressing mode not supported: %d", operands->mode);
+    }
+}
+
+
+static Error *
+addregreg(Jitfn *j, Jitvalue *args)
+{
+    u8      srcsize, dstsize, srcrexr, dstrexr, opcode;
+    Error   *err;
+    Insarg  *src, *dst;
+
+    growmem(j);
+
+    src = &args->src;
+    dst = &args->dst;
+
+    srcsize = regsizes[src->reg];
+    dstsize = regsizes[dst->reg];
+    srcrexr = rexr[src->reg];
+    dstrexr = rexr[dst->reg];
+
+    if (slow(srcsize != dstsize)) {
+        return newerror("add: register sizes mismatch (%d: %d) (%d: %d)",
+                        src->reg, srcsize, dst->reg, dstsize);
+    }
+
+    if (srcsize == 16) {
+        *j->begin++ = 0x66;
+    }
+
+    opcode = (srcsize != 8);
+
+    if (srcrexr || dstrexr || srcsize == 64) {
+        *j->begin++ = rex(srcsize == 64, srcrexr, 0, dstrexr);
+    }
+
+    *j->begin++ = opcode;
+    *j->begin++ = modrm(3, args->src.reg, args->dst.reg);
+
+    return NULL;
+}
+
+
+static Error *
+addimmreg(Jitfn *j, Jitvalue *args)
+{
+    u8   dstsize, regn, opcode;
+    i64  imm;
+
+    imm = args->src.i64val;
+    opcode = 2;
+    dstsize = regsizes[args->dst.reg];
+
+    checkimm(imm, INT32_MIN, INT32_MAX);
+
+    if (dstsize == 16) {
+        *j->begin++ = 0x66;
+    }
+
+    if (rexr[args->dst.reg] || dstsize == 64) {
+        *j->begin++ = rex(dstsize == 64, rexr[args->dst.reg], 0, 0);
+    }
+
+    regn = args->dst.reg % 8;
+
+    opcode |= (dstsize != 8 || rexr[args->dst.reg] != 0);
+
+    *j->begin++ = opcode;
+    *j->begin++ = modrm(0, regn, 4);
+    *j->begin++ = sib(0, 4, 5);
+
+    if (slow(u32encode(args->src.i64val, &j->begin, j->end) != OK)) {
+        return newerror("failed to encode 32bits");
+    }
+
+    return NULL;
+}
 
 
 Error *
@@ -57,7 +159,7 @@ mov(Jitfn *j, Jitvalue *operands)
         return movindreg(j, operands);
     }
 
-    return newerror("mode unimplemented");
+    return newerror("addressing mode not supported: %d", operands->mode);
 }
 
 
@@ -130,7 +232,7 @@ movregreg(Jitfn *j, Jitvalue *args)
     case R13:
     case R14:
     case R15:
-        *j->begin++ = 0x4d;
+        *j->begin++ = rex(1, 1, 0, 1); /* todo */
 
 movq:
 
