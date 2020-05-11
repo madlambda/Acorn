@@ -232,7 +232,7 @@ movregreg(Jitfn *j, Jitvalue *args)
     case R13:
     case R14:
     case R15:
-        *j->begin++ = rex(1, 1, 0, 1); /* todo */
+        *j->begin++ = rex(1, 1, 0, 1);
 
 movq:
 
