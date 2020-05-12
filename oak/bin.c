@@ -250,6 +250,23 @@ u32decode(u8 **begin, const u8 *end, u32 *val)
 
 
 u8
+u8encode(u8 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    data = *begin;
+
+    if (slow((end - data) < 1)) {
+        return ERR;
+    }
+
+    *data++ = (u8) val;
+    *begin = data;
+    return OK;
+}
+
+
+u8
 u16encode(u16 val, u8 **begin, const u8 *end)
 {
     u8  *data;
@@ -311,4 +328,25 @@ u64encode(u64 val, u8 **begin, const u8 *end)
 
     *begin += 8;
     return OK;
+}
+
+
+u8
+uencode(u64 val, u8 bits, u8 **begin, const u8 *end)
+{
+    switch (bits) {
+    case 8:
+        return u8encode(val, begin, end);
+
+    case 16:
+        return u16encode(val, begin, end);
+
+    case 32:
+        return u32encode(val, begin, end);
+
+    case 64:
+        return u64encode(val, begin, end);
+    }
+
+    return ERR;
 }

@@ -12,6 +12,7 @@ typedef enum {
     ImmReg,     /* Immediate constant */
     MemReg,     /* Immediate direct memory */
     IndReg,     /* Indirect memory + optional displacement */
+    ImmInd,     /* Immediate to indirect memory */
 
     RegMem,
 } AddressingMode;
@@ -38,6 +39,7 @@ typedef struct {
 
 typedef struct {
     AddressingMode  mode;
+    u8              size;       /* Instruction size (optional) */
     Insarg          src;
     Insarg          dst;
     u32             *stacksize; /* used by jit prologue/epilogue */

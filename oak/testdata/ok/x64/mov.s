@@ -291,149 +291,77 @@ _start:
     mov %rdi, %rsi
     mov %rdi, %rdi
 
-    mov %r8, %r8
-    mov %r8, %r9
-    mov %r8, %r10
-    mov %r8, %r11
-    mov %r8, %r12
-    mov %r8, %r13
-    mov %r8, %r14
-    mov %r8, %r15
+    mov %r8b, %r8b
+    mov %r8b, %r9b
+    mov %r8b, %r10b
+    mov %r8b, %r11b
+    mov %r8b, %r12b
+    mov %r8b, %r13b
+    mov %r8b, %r14b
+    mov %r8b, %r15b
 
-    mov %r9, %r8
-    mov %r9, %r9
-    mov %r9, %r10
-    mov %r9, %r11
-    mov %r9, %r12
-    mov %r9, %r13
-    mov %r9, %r14
-    mov %r9, %r15
+    mov %r9b, %r8b
+    mov %r9b, %r9b
+    mov %r9b, %r10b
+    mov %r9b, %r11b
+    mov %r9b, %r12b
+    mov %r9b, %r13b
+    mov %r9b, %r14b
+    mov %r9b, %r15b
 
-    mov %r10, %r8
-    mov %r10, %r9
-    mov %r10, %r10
-    mov %r10, %r11
-    mov %r10, %r12
-    mov %r10, %r13
-    mov %r10, %r14
-    mov %r10, %r15
+    mov %r10b, %r8b
+    mov %r10b, %r9b
+    mov %r10b, %r10b
+    mov %r10b, %r11b
+    mov %r10b, %r12b
+    mov %r10b, %r13b
+    mov %r10b, %r14b
+    mov %r10b, %r15b
 
-    mov %r11, %r8
-    mov %r11, %r9
-    mov %r11, %r10
-    mov %r11, %r11
-    mov %r11, %r12
-    mov %r11, %r13
-    mov %r11, %r14
-    mov %r11, %r15
+    mov %r11b, %r8b
+    mov %r11b, %r9b
+    mov %r11b, %r10b
+    mov %r11b, %r11b
+    mov %r11b, %r12b
+    mov %r11b, %r13b
+    mov %r11b, %r14b
+    mov %r11b, %r15b
 
-    mov %r12, %r8
-    mov %r12, %r9
-    mov %r12, %r10
-    mov %r12, %r11
-    mov %r12, %r12
-    mov %r12, %r13
-    mov %r12, %r14
-    mov %r12, %r15
+    mov %r12b, %r8b
+    mov %r12b, %r9b
+    mov %r12b, %r10b
+    mov %r12b, %r11b
+    mov %r12b, %r12b
+    mov %r12b, %r13b
+    mov %r12b, %r14b
+    mov %r12b, %r15b
 
-    mov %r13, %r8
-    mov %r13, %r9
-    mov %r13, %r10
-    mov %r13, %r11
-    mov %r13, %r12
-    mov %r13, %r13
-    mov %r13, %r14
-    mov %r13, %r15
+    mov %r13b, %r8b
+    mov %r13b, %r9b
+    mov %r13b, %r10b
+    mov %r13b, %r11b
+    mov %r13b, %r12b
+    mov %r13b, %r13b
+    mov %r13b, %r14b
+    mov %r13b, %r15b
 
-    mov %r14, %r8
-    mov %r14, %r9
-    mov %r14, %r10
-    mov %r14, %r11
-    mov %r14, %r12
-    mov %r14, %r13
-    mov %r14, %r14
-    mov %r14, %r15
+    mov %r14b, %r8b
+    mov %r14b, %r9b
+    mov %r14b, %r10b
+    mov %r14b, %r11b
+    mov %r14b, %r12b
+    mov %r14b, %r13b
+    mov %r14b, %r14b
+    mov %r14b, %r15b
 
-    mov %r15, %r8
-    mov %r15, %r9
-    mov %r15, %r10
-    mov %r15, %r11
-    mov %r15, %r12
-    mov %r15, %r13
-    mov %r15, %r14
-    mov %r15, %r15
-
-    mov %r8d, %r8d
-    mov %r8d, %r9d
-    mov %r8d, %r10d
-    mov %r8d, %r11d
-    mov %r8d, %r12d
-    mov %r8d, %r13d
-    mov %r8d, %r14d
-    mov %r8d, %r15d
-
-    mov %r9d, %r8d
-    mov %r9d, %r9d
-    mov %r9d, %r10d
-    mov %r9d, %r11d
-    mov %r9d, %r12d
-    mov %r9d, %r13d
-    mov %r9d, %r14d
-    mov %r9d, %r15d
-
-    mov %r10d, %r8d
-    mov %r10d, %r9d
-    mov %r10d, %r10d
-    mov %r10d, %r11d
-    mov %r10d, %r12d
-    mov %r10d, %r13d
-    mov %r10d, %r14d
-    mov %r10d, %r15d
-
-    mov %r11d, %r8d
-    mov %r11d, %r9d
-    mov %r11d, %r10d
-    mov %r11d, %r11d
-    mov %r11d, %r12d
-    mov %r11d, %r13d
-    mov %r11d, %r14d
-    mov %r11d, %r15d
-
-    mov %r12d, %r8d
-    mov %r12d, %r9d
-    mov %r12d, %r10d
-    mov %r12d, %r11d
-    mov %r12d, %r12d
-    mov %r12d, %r13d
-    mov %r12d, %r14d
-    mov %r12d, %r15d
-
-    mov %r13d, %r8d
-    mov %r13d, %r9d
-    mov %r13d, %r10d
-    mov %r13d, %r11d
-    mov %r13d, %r12d
-    mov %r13d, %r13d
-    mov %r13d, %r14d
-    mov %r13d, %r15d
-
-    mov %r14d, %r8d
-    mov %r14d, %r9d
-    mov %r14d, %r10d
-    mov %r14d, %r11d
-    mov %r14d, %r12d
-    mov %r14d, %r13d
-    mov %r14d, %r14d
-    mov %r14d, %r15d
-
-    mov %r15d, %r8d
-    mov %r15d, %r9d
-    mov %r15d, %r10d
-    mov %r15d, %r11d
-    mov %r15d, %r12d
-    mov %r15d, %r13d
-    mov %r15d, %r14d
-    mov %r15d, %r15d
+    mov %r15b, %r8b
+    mov %r15b, %r9b
+    mov %r15b, %r10b
+    mov %r15b, %r11b
+    mov %r15b, %r12b
+    mov %r15b, %r13b
+    mov %r15b, %r14b
+    mov %r15b, %r15b
 
     mov %r8w, %r8w
     mov %r8w, %r9w
@@ -507,6 +435,150 @@ _start:
     mov %r15w, %r14w
     mov %r15w, %r15w
 
+    mov %r8d, %r8d
+    mov %r8d, %r9d
+    mov %r8d, %r10d
+    mov %r8d, %r11d
+    mov %r8d, %r12d
+    mov %r8d, %r13d
+    mov %r8d, %r14d
+    mov %r8d, %r15d
+
+    mov %r9d, %r8d
+    mov %r9d, %r9d
+    mov %r9d, %r10d
+    mov %r9d, %r11d
+    mov %r9d, %r12d
+    mov %r9d, %r13d
+    mov %r9d, %r14d
+    mov %r9d, %r15d
+
+    mov %r10d, %r8d
+    mov %r10d, %r9d
+    mov %r10d, %r10d
+    mov %r10d, %r11d
+    mov %r10d, %r12d
+    mov %r10d, %r13d
+    mov %r10d, %r14d
+    mov %r10d, %r15d
+
+    mov %r11d, %r8d
+    mov %r11d, %r9d
+    mov %r11d, %r10d
+    mov %r11d, %r11d
+    mov %r11d, %r12d
+    mov %r11d, %r13d
+    mov %r11d, %r14d
+    mov %r11d, %r15d
+
+    mov %r12d, %r8d
+    mov %r12d, %r9d
+    mov %r12d, %r10d
+    mov %r12d, %r11d
+    mov %r12d, %r12d
+    mov %r12d, %r13d
+    mov %r12d, %r14d
+    mov %r12d, %r15d
+
+    mov %r13d, %r8d
+    mov %r13d, %r9d
+    mov %r13d, %r10d
+    mov %r13d, %r11d
+    mov %r13d, %r12d
+    mov %r13d, %r13d
+    mov %r13d, %r14d
+    mov %r13d, %r15d
+
+    mov %r14d, %r8d
+    mov %r14d, %r9d
+    mov %r14d, %r10d
+    mov %r14d, %r11d
+    mov %r14d, %r12d
+    mov %r14d, %r13d
+    mov %r14d, %r14d
+    mov %r14d, %r15d
+
+    mov %r15d, %r8d
+    mov %r15d, %r9d
+    mov %r15d, %r10d
+    mov %r15d, %r11d
+    mov %r15d, %r12d
+    mov %r15d, %r13d
+    mov %r15d, %r14d
+    mov %r15d, %r15d
+
+    mov %r8, %r8
+    mov %r8, %r9
+    mov %r8, %r10
+    mov %r8, %r11
+    mov %r8, %r12
+    mov %r8, %r13
+    mov %r8, %r14
+    mov %r8, %r15
+
+    mov %r9, %r8
+    mov %r9, %r9
+    mov %r9, %r10
+    mov %r9, %r11
+    mov %r9, %r12
+    mov %r9, %r13
+    mov %r9, %r14
+    mov %r9, %r15
+
+    mov %r10, %r8
+    mov %r10, %r9
+    mov %r10, %r10
+    mov %r10, %r11
+    mov %r10, %r12
+    mov %r10, %r13
+    mov %r10, %r14
+    mov %r10, %r15
+
+    mov %r11, %r8
+    mov %r11, %r9
+    mov %r11, %r10
+    mov %r11, %r11
+    mov %r11, %r12
+    mov %r11, %r13
+    mov %r11, %r14
+    mov %r11, %r15
+
+    mov %r12, %r8
+    mov %r12, %r9
+    mov %r12, %r10
+    mov %r12, %r11
+    mov %r12, %r12
+    mov %r12, %r13
+    mov %r12, %r14
+    mov %r12, %r15
+
+    mov %r13, %r8
+    mov %r13, %r9
+    mov %r13, %r10
+    mov %r13, %r11
+    mov %r13, %r12
+    mov %r13, %r13
+    mov %r13, %r14
+    mov %r13, %r15
+
+    mov %r14, %r8
+    mov %r14, %r9
+    mov %r14, %r10
+    mov %r14, %r11
+    mov %r14, %r12
+    mov %r14, %r13
+    mov %r14, %r14
+    mov %r14, %r15
+
+    mov %r15, %r8
+    mov %r15, %r9
+    mov %r15, %r10
+    mov %r15, %r11
+    mov %r15, %r12
+    mov %r15, %r13
+    mov %r15, %r14
+    mov %r15, %r15
+
     # ImmReg
 
     mov $127, %al
@@ -540,23 +612,115 @@ _start:
     mov $0x69, %esi
     mov $0x69, %edi
 
-    mov $0x69, %rax
-    mov $0x69, %rcx
-    mov $0x69, %rdx
-    mov $0x69, %rbx
-    mov $0x69, %rsp
-    mov $0x69, %rbp
-    mov $0x69, %rsi
-    mov $0x69, %rdi
+    # movabsq $0x69, %rax
+    # movabsq $0x69, %rcx
+    # ...
+.byte 0x48
+.byte 0xb8
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
 
-    mov $0x69, %r8
-    mov $0x69, %r9
-    mov $0x69, %r10
-    mov $0x69, %r11
-    mov $0x69, %r12
-    mov $0x69, %r13
-    mov $0x69, %r14
-    mov $0x69, %r15
+.byte 0x48
+.byte 0xb9
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x48
+.byte 0xba
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x48
+.byte 0xbb
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x48
+.byte 0xbc
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x48
+.byte 0xbd
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x48
+.byte 0xbe
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x48
+.byte 0xbf
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+
+    mov $0x69, %r8b
+    mov $0x69, %r9b
+    mov $0x69, %r10b
+    mov $0x69, %r11b
+    mov $0x69, %r12b
+    mov $0x69, %r13b
+    mov $0x69, %r14b
+    mov $0x69, %r15b
+
+    mov $0x69, %r8w
+    mov $0x69, %r9w
+    mov $0x69, %r10w
+    mov $0x69, %r11w
+    mov $0x69, %r12w
+    mov $0x69, %r13w
+    mov $0x69, %r14w
+    mov $0x69, %r15w
 
     mov $0x69, %r8d
     mov $0x69, %r9d
@@ -567,14 +731,93 @@ _start:
     mov $0x69, %r14d
     mov $0x69, %r15d
 
-    mov $0x69, %r8w
-    mov $0x69, %r9w
-    mov $0x69, %r10w
-    mov $0x69, %r11w
-    mov $0x69, %r12w
-    mov $0x69, %r13w
-    mov $0x69, %r14w
-    mov $0x69, %r15w
+.byte 0x49
+.byte 0xb8
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x49
+.byte 0xb9
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x49
+.byte 0xba
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x49
+.byte 0xbb
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x49
+.byte 0xbc
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x49
+.byte 0xbd
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x49
+.byte 0xbe
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+
+.byte 0x49
+.byte 0xbf
+.byte 0x69
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
+.byte 0x0
 
     movw $32767, %ax
     mov $32767, %eax
@@ -622,14 +865,23 @@ _start:
     mov 0x1, %rsi
     mov 0x1, %rdi
 
-    mov 0x1, %r8
-    mov 0x1, %r9
-    mov 0x1, %r10
-    mov 0x1, %r11
-    mov 0x1, %r12
-    mov 0x1, %r13
-    mov 0x1, %r14
-    mov 0x1, %r15
+    mov 0x1, %r8b
+    mov 0x1, %r9b
+    mov 0x1, %r10b
+    mov 0x1, %r11b
+    mov 0x1, %r12b
+    mov 0x1, %r13b
+    mov 0x1, %r14b
+    mov 0x1, %r15b
+
+    mov 0x1, %r8w
+    mov 0x1, %r9w
+    mov 0x1, %r10w
+    mov 0x1, %r11w
+    mov 0x1, %r12w
+    mov 0x1, %r13w
+    mov 0x1, %r14w
+    mov 0x1, %r15w
 
     mov 0x1, %r8d
     mov 0x1, %r9d
@@ -640,14 +892,14 @@ _start:
     mov 0x1, %r14d
     mov 0x1, %r15d
 
-    mov 0x1, %r8w
-    mov 0x1, %r9w
-    mov 0x1, %r10w
-    mov 0x1, %r11w
-    mov 0x1, %r12w
-    mov 0x1, %r13w
-    mov 0x1, %r14w
-    mov 0x1, %r15w
+    mov 0x1, %r8
+    mov 0x1, %r9
+    mov 0x1, %r10
+    mov 0x1, %r11
+    mov 0x1, %r12
+    mov 0x1, %r13
+    mov 0x1, %r14
+    mov 0x1, %r15
 
     # Binutils Gas assembler encodes the instruction below as movabsl (sign
     # extending the value) while LLVM assembler encodes it as movl.
@@ -661,10 +913,18 @@ _start:
     .byte 0xad
     .byte 0xde
 
-    movabsq 0xdeadbeef, %rax
+    #movabsq 0xdeadbeef, %rax
+    .byte 0x48
+    .byte 0x8b
+    .byte 0x04
+    .byte 0x25
+    .byte 0xef
+    .byte 0xbe
+    .byte 0xad
+    .byte 0xde
 
     mov 0x7fffffff, %eax
-    movabsq 0xffffffffffffffff, %rax
+
     mov 0x1000, %rax
 
     mov 0x7fffffff, %r10
@@ -843,14 +1103,23 @@ _start:
     mov (%eax), %rsi
     mov (%eax), %rdi
 
-    mov (%eax), %r8
-    mov (%eax), %r9
-    mov (%eax), %r10
-    mov (%eax), %r11
-    mov (%eax), %r12
-    mov (%eax), %r13
-    mov (%eax), %r14
-    mov (%eax), %r15
+    mov (%eax), %r8b
+    mov (%eax), %r9b
+    mov (%eax), %r10b
+    mov (%eax), %r11b
+    mov (%eax), %r12b
+    mov (%eax), %r13b
+    mov (%eax), %r14b
+    mov (%eax), %r15b
+
+    mov (%eax), %r8w
+    mov (%eax), %r9w
+    mov (%eax), %r10w
+    mov (%eax), %r11w
+    mov (%eax), %r12w
+    mov (%eax), %r13w
+    mov (%eax), %r14w
+    mov (%eax), %r15w
 
     mov (%eax), %r8d
     mov (%eax), %r9d
@@ -861,14 +1130,14 @@ _start:
     mov (%eax), %r14d
     mov (%eax), %r15d
 
-    mov (%eax), %r8w
-    mov (%eax), %r9w
-    mov (%eax), %r10w
-    mov (%eax), %r11w
-    mov (%eax), %r12w
-    mov (%eax), %r13w
-    mov (%eax), %r14w
-    mov (%eax), %r15w
+    mov (%eax), %r8
+    mov (%eax), %r9
+    mov (%eax), %r10
+    mov (%eax), %r11
+    mov (%eax), %r12
+    mov (%eax), %r13
+    mov (%eax), %r14
+    mov (%eax), %r15
 
     mov 8(%eax), %ax
     mov 8(%eax), %cx
@@ -897,14 +1166,23 @@ _start:
     mov 8(%eax), %rsi
     mov 8(%eax), %rdi
 
-    mov 8(%eax), %r8
-    mov 8(%eax), %r9
-    mov 8(%eax), %r10
-    mov 8(%eax), %r11
-    mov 8(%eax), %r12
-    mov 8(%eax), %r13
-    mov 8(%eax), %r14
-    mov 8(%eax), %r15
+    mov 8(%eax), %r8b
+    mov 8(%eax), %r9b
+    mov 8(%eax), %r10b
+    mov 8(%eax), %r11b
+    mov 8(%eax), %r12b
+    mov 8(%eax), %r13b
+    mov 8(%eax), %r14b
+    mov 8(%eax), %r15b
+
+    mov 8(%eax), %r8w
+    mov 8(%eax), %r9w
+    mov 8(%eax), %r10w
+    mov 8(%eax), %r11w
+    mov 8(%eax), %r12w
+    mov 8(%eax), %r13w
+    mov 8(%eax), %r14w
+    mov 8(%eax), %r15w
 
     mov 8(%eax), %r8d
     mov 8(%eax), %r9d
@@ -915,14 +1193,14 @@ _start:
     mov 8(%eax), %r14d
     mov 8(%eax), %r15d
 
-    mov 8(%eax), %r8w
-    mov 8(%eax), %r9w
-    mov 8(%eax), %r10w
-    mov 8(%eax), %r11w
-    mov 8(%eax), %r12w
-    mov 8(%eax), %r13w
-    mov 8(%eax), %r14w
-    mov 8(%eax), %r15w
+    mov 8(%eax), %r8
+    mov 8(%eax), %r9
+    mov 8(%eax), %r10
+    mov 8(%eax), %r11
+    mov 8(%eax), %r12
+    mov 8(%eax), %r13
+    mov 8(%eax), %r14
+    mov 8(%eax), %r15
 
     mov 16(%eax), %ax
     mov 16(%eax), %cx
@@ -951,14 +1229,23 @@ _start:
     mov 16(%eax), %rsi
     mov 16(%eax), %rdi
 
-    mov 16(%eax), %r8
-    mov 16(%eax), %r9
-    mov 16(%eax), %r10
-    mov 16(%eax), %r11
-    mov 16(%eax), %r12
-    mov 16(%eax), %r13
-    mov 16(%eax), %r14
-    mov 16(%eax), %r15
+    mov 16(%eax), %r8b
+    mov 16(%eax), %r9b
+    mov 16(%eax), %r10b
+    mov 16(%eax), %r11b
+    mov 16(%eax), %r12b
+    mov 16(%eax), %r13b
+    mov 16(%eax), %r14b
+    mov 16(%eax), %r15b
+
+    mov 16(%eax), %r8w
+    mov 16(%eax), %r9w
+    mov 16(%eax), %r10w
+    mov 16(%eax), %r11w
+    mov 16(%eax), %r12w
+    mov 16(%eax), %r13w
+    mov 16(%eax), %r14w
+    mov 16(%eax), %r15w
 
     mov 16(%eax), %r8d
     mov 16(%eax), %r9d
@@ -969,14 +1256,14 @@ _start:
     mov 16(%eax), %r14d
     mov 16(%eax), %r15d
 
-    mov 16(%eax), %r8w
-    mov 16(%eax), %r9w
-    mov 16(%eax), %r10w
-    mov 16(%eax), %r11w
-    mov 16(%eax), %r12w
-    mov 16(%eax), %r13w
-    mov 16(%eax), %r14w
-    mov 16(%eax), %r15w
+    mov 16(%eax), %r8
+    mov 16(%eax), %r9
+    mov 16(%eax), %r10
+    mov 16(%eax), %r11
+    mov 16(%eax), %r12
+    mov 16(%eax), %r13
+    mov 16(%eax), %r14
+    mov 16(%eax), %r15
 
     mov 2000(%eax), %ax
     mov 2000(%eax), %cx
@@ -1005,14 +1292,23 @@ _start:
     mov 2000(%eax), %rsi
     mov 2000(%eax), %rdi
 
-    mov 2000(%eax), %r8
-    mov 2000(%eax), %r9
-    mov 2000(%eax), %r10
-    mov 2000(%eax), %r11
-    mov 2000(%eax), %r12
-    mov 2000(%eax), %r13
-    mov 2000(%eax), %r14
-    mov 2000(%eax), %r15
+    mov 2000(%eax), %r8b
+    mov 2000(%eax), %r9b
+    mov 2000(%eax), %r10b
+    mov 2000(%eax), %r11b
+    mov 2000(%eax), %r12b
+    mov 2000(%eax), %r13b
+    mov 2000(%eax), %r14b
+    mov 2000(%eax), %r15b
+
+    mov 2000(%eax), %r8w
+    mov 2000(%eax), %r9w
+    mov 2000(%eax), %r10w
+    mov 2000(%eax), %r11w
+    mov 2000(%eax), %r12w
+    mov 2000(%eax), %r13w
+    mov 2000(%eax), %r14w
+    mov 2000(%eax), %r15w
 
     mov 2000(%eax), %r8d
     mov 2000(%eax), %r9d
@@ -1023,14 +1319,14 @@ _start:
     mov 2000(%eax), %r14d
     mov 2000(%eax), %r15d
 
-    mov 2000(%eax), %r8w
-    mov 2000(%eax), %r9w
-    mov 2000(%eax), %r10w
-    mov 2000(%eax), %r11w
-    mov 2000(%eax), %r12w
-    mov 2000(%eax), %r13w
-    mov 2000(%eax), %r14w
-    mov 2000(%eax), %r15w
+    mov 2000(%eax), %r8
+    mov 2000(%eax), %r9
+    mov 2000(%eax), %r10
+    mov 2000(%eax), %r11
+    mov 2000(%eax), %r12
+    mov 2000(%eax), %r13
+    mov 2000(%eax), %r14
+    mov 2000(%eax), %r15
 
     mov 0x10(%eax), %ax
     mov 0x10(%ecx), %ax
@@ -1049,6 +1345,15 @@ _start:
     mov 0x10(%rbp), %ax
     mov 0x10(%rsi), %ax
     mov 0x10(%rdi), %ax
+
+    mov 0x10(%r8d), %ax
+    mov 0x10(%r9d), %ax
+    mov 0x10(%r10d), %ax
+    mov 0x10(%r11d), %ax
+    mov 0x10(%r12d), %ax
+    mov 0x10(%r13d), %ax
+    mov 0x10(%r14d), %ax
+    mov 0x10(%r15d), %ax
 
     mov 0x10(%r8), %ax
     mov 0x10(%r9), %ax
@@ -1076,6 +1381,15 @@ _start:
     mov 0x10(%rbp), %cx
     mov 0x10(%rsi), %cx
     mov 0x10(%rdi), %cx
+
+    mov 0x10(%r8d), %cx
+    mov 0x10(%r9d), %cx
+    mov 0x10(%r10d), %cx
+    mov 0x10(%r11d), %cx
+    mov 0x10(%r12d), %cx
+    mov 0x10(%r13d), %cx
+    mov 0x10(%r14d), %cx
+    mov 0x10(%r15d), %cx
 
     mov 0x10(%r8), %cx
     mov 0x10(%r9), %cx
@@ -1156,14 +1470,23 @@ _start:
     mov %rsi, 0x69
     mov %rdi, 0x69
 
-    mov %r8, 0x69
-    mov %r9, 0x69
-    mov %r10, 0x69
-    mov %r11, 0x69
-    mov %r12, 0x69
-    mov %r13, 0x69
-    mov %r14, 0x69
-    mov %r15, 0x69
+    mov %r8b, 0x69
+    mov %r9b, 0x69
+    mov %r10b, 0x69
+    mov %r11b, 0x69
+    mov %r12b, 0x69
+    mov %r13b, 0x69
+    mov %r14b, 0x69
+    mov %r15b, 0x69
+
+    mov %r8w, 0x69
+    mov %r9w, 0x69
+    mov %r10w, 0x69
+    mov %r11w, 0x69
+    mov %r12w, 0x69
+    mov %r13w, 0x69
+    mov %r14w, 0x69
+    mov %r15w, 0x69
 
     mov %r8d, 0x69
     mov %r9d, 0x69
@@ -1174,14 +1497,14 @@ _start:
     mov %r14d, 0x69
     mov %r15d, 0x69
 
-    mov %r8w, 0x69
-    mov %r9w, 0x69
-    mov %r10w, 0x69
-    mov %r11w, 0x69
-    mov %r12w, 0x69
-    mov %r13w, 0x69
-    mov %r14w, 0x69
-    mov %r15w, 0x69
+    mov %r8, 0x69
+    mov %r9, 0x69
+    mov %r10, 0x69
+    mov %r11, 0x69
+    mov %r12, 0x69
+    mov %r13, 0x69
+    mov %r14, 0x69
+    mov %r15, 0x69
 
     mov %al, 0x7fffffff
     mov %cl, 0x7fffffff
@@ -1219,23 +1542,14 @@ _start:
     mov %rsi, 0x7fffffff
     mov %rdi, 0x7fffffff
 
-    mov %r8, 0x7fffffff
-    mov %r9, 0x7fffffff
-    mov %r10, 0x7fffffff
-    mov %r11, 0x7fffffff
-    mov %r12, 0x7fffffff
-    mov %r13, 0x7fffffff
-    mov %r14, 0x7fffffff
-    mov %r15, 0x7fffffff
-
-    mov %r8d, 0x7fffffff
-    mov %r9d, 0x7fffffff
-    mov %r10d, 0x7fffffff
-    mov %r11d, 0x7fffffff
-    mov %r12d, 0x7fffffff
-    mov %r13d, 0x7fffffff
-    mov %r14d, 0x7fffffff
-    mov %r15d, 0x7fffffff
+    mov %r8b, 0x7fffffff
+    mov %r9b, 0x7fffffff
+    mov %r10b, 0x7fffffff
+    mov %r11b, 0x7fffffff
+    mov %r12b, 0x7fffffff
+    mov %r13b, 0x7fffffff
+    mov %r14b, 0x7fffffff
+    mov %r15b, 0x7fffffff
 
     mov %r8w, 0x7fffffff
     mov %r9w, 0x7fffffff
@@ -1246,3 +1560,58 @@ _start:
     mov %r14w, 0x7fffffff
     mov %r15w, 0x7fffffff
 
+    mov %r8d, 0x7fffffff
+    mov %r9d, 0x7fffffff
+    mov %r10d, 0x7fffffff
+    mov %r11d, 0x7fffffff
+    mov %r12d, 0x7fffffff
+    mov %r13d, 0x7fffffff
+    mov %r14d, 0x7fffffff
+    mov %r15d, 0x7fffffff
+
+    mov %r8, 0x7fffffff
+    mov %r9, 0x7fffffff
+    mov %r10, 0x7fffffff
+    mov %r11, 0x7fffffff
+    mov %r12, 0x7fffffff
+    mov %r13, 0x7fffffff
+    mov %r14, 0x7fffffff
+    mov %r15, 0x7fffffff
+
+    # ImmInd
+
+    movb $1, (%eax)
+    movb $1, (%ecx)
+    movb $1, (%edx)
+    movb $1, (%ebx)
+    movb $1, (%esp)
+    movb $1, (%ebp)
+    movb $1, (%esi)
+    movb $1, (%edi)
+
+    movb $1, (%rax)
+    movb $1, (%rcx)
+    movb $1, (%rdx)
+    movb $1, (%rbx)
+    movb $1, (%rsp)
+    movb $1, (%rbp)
+    movb $1, (%rsi)
+    movb $1, (%rdi)
+
+    movb $1, (%r8d)
+    movb $1, (%r9d)
+    movb $1, (%r10d)
+    movb $1, (%r11d)
+    movb $1, (%r12d)
+    movb $1, (%r13d)
+    movb $1, (%r14d)
+    movb $1, (%r15d)
+
+    movb $1, (%r8)
+    movb $1, (%r9)
+    movb $1, (%r10)
+    movb $1, (%r11)
+    movb $1, (%r12)
+    movb $1, (%r13)
+    movb $1, (%r14)
+    movb $1, (%r15)

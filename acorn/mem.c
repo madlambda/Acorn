@@ -18,6 +18,14 @@ copy(void *dst, const void *src, size_t n)
 }
 
 
+void
+copyptr(ptr dst, const ptr src)
+{
+    /* GCC erroneusly forbids cast of data to func pointers with -pedantic. */
+    memcpy((void *) dst, (void *) src, sizeof(ptr));
+}
+
+
 void *
 zmalloc(size_t size)
 {

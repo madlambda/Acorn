@@ -62,11 +62,23 @@
     } while (0)
 
 
+#define immind(a, imm, r)                                                     \
+    do {                                                                      \
+        (a)->mode = ImmInd;                                                   \
+        (a)->src.i64val = imm;                                                \
+        (a)->dst.reg = r;                                                     \
+    } while (0)
+
+
+#define absolute(n)                                                           \
+    ((n) < 0 ? -(n) : (n))
+
+
 #define checkimm(imm, min, max)                                               \
     do {                                                                      \
-        if (slow((imm) > (max) || (imm) < (min))) {                           \
-            return newerror("imm %d(i64) overflow range [%d(i64), %d(i64)]",  \
-                            (imm), (min), (max));                             \
+        if (slow((imm) > (i64)(max) || (i64)(imm) < (min))) {                 \
+            return newerror("imm %d(i64) overflow range [%d(i64), %d(u64)]",  \
+                            (i64)(imm), (i64)(min), (u64)(max));              \
         }                                                                     \
     } while (0)
 
@@ -139,16 +151,23 @@ typedef enum {
     RSI,
     RDI,
 
-    R8,
-    R9,
-    R10,
-    R11,
+    R8B,
+    R9B,
+    R10B,
+    R11B,
+    R12B,
+    R13B,
+    R14B,
+    R15B,
 
-    /* callee-saved */
-    R12,
-    R13,
-    R14,
-    R15,
+    R8W,
+    R9W,
+    R10W,
+    R11W,
+    R12W,
+    R13W,
+    R14W,
+    R15W,
 
     R8D,
     R9D,
@@ -159,14 +178,16 @@ typedef enum {
     R14D,
     R15D,
 
-    R8W,
-    R9W,
-    R10W,
-    R11W,
-    R12W,
-    R13W,
-    R14W,
-    R15W,
+    R8,
+    R9,
+    R10,
+    R11,
+
+    /* callee-saved */
+    R12,
+    R13,
+    R14,
+    R15,
 
 #if 0
     MM0,
@@ -193,8 +214,16 @@ typedef enum {
 
 
 Error   *add(Jitfn *j, Jitvalue *operands);
-Error   *mov(Jitfn *j, Jitvalue *operands);
+
+Error   *movb(Jitfn *j, Jitvalue *operands);
+Error   *movw(Jitfn *j, Jitvalue *operands);
+Error   *movl(Jitfn *j, Jitvalue *operands);
+Error   *movq(Jitfn *j, Jitvalue *operands);
+
 Error   *nop(Jitfn *j, Jitvalue *operands);
+Error   *ret(Jitfn *j, Jitvalue *operands);
+
+Error   *epilogue(Jitfn *j, Jitvalue *operands);
 
 
 #endif /* _OAK_X64_H_ */

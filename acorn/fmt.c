@@ -12,6 +12,7 @@
 /*
  * Formats supported:
  *
+ *  %%      emits %
  *  %s      null-terminated string (C string)
  *  %S      String * (Acorn string)
  *  %d      base 10 integer
@@ -309,6 +310,12 @@ vpfmtbuf(Printer *printer, String *buf, String *sfmt, va_list args)
         }
 
         format++;
+
+        if (*format == '%') {
+            buf = appendc(buf, 1, '%');
+            format++;
+            continue;
+        }
 
         index = *format - 'A';
 

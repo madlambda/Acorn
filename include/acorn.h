@@ -56,6 +56,7 @@
 
 
 void    *copy(void *dst, const void *src, size_t n);
+void    copyptr(ptr dst, const ptr src);
 void    *zmalloc(size_t size);
 
 

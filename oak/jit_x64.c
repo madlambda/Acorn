@@ -17,11 +17,9 @@
 
 
 static Error *prologue(Jitfn *j, Jitvalue *args);
-static Error *epilogue(Jitfn *j, Jitvalue *args);
 static Error *xorregreg(Jitfn *j, Jitvalue *args);
 static Error *funcall(Jitfn *j, Jitvalue *args);
 static Error *sub(Jitfn *j, Jitvalue *args);
-static Error *movregrsp(Jitfn *j, Jitvalue *args);
 static Error *movimm32regdisp(Jitfn *j, Jitvalue *args);
 static Error *setlocalreg(Jitfn *j, Jitvalue *args);
 
@@ -191,8 +189,7 @@ x64compile(Module *m, Function *fn)
         return err;
     }
 
-    /* GCC erroneusly forbids cast of data to func pointers with -pedantic. */
-    memcpy((void *)((ptr) fn->fn), j->data, sizeof(ptr));
+    copyptr((ptr) &fn->fn, (ptr) &j->data);
     return NULL;
 }
 
@@ -237,14 +234,14 @@ prologue(Jitfn *j, Jitvalue *args)
     memset(&args2, 0, sizeof(Jitvalue));
     args2.src.reg = RDI;
     args2.dst.disp = 0;
-    err = movregrsp(j, &args2);
+    err = movq(j, &args2);
     if (slow(err != NULL)) {
         return error(err, "encoding prologue");
     }
 
     args2.src.reg = RSI;
     args2.dst.disp = 8;
-    err = movregrsp(j, &args2);
+    err = movq(j, &args2);
     if (slow(err != NULL)) {
         return error(err, "encoding prologue");
     }
@@ -319,83 +316,6 @@ emitepilogue(Block *block, u32 *restoresize)
 
 
 static Error *
-epilogue(Jitfn *j, Jitvalue *args)
-{
-    u32    restorestack;
-    Error  *err;
-
-    restorestack = *args->stacksize;
-
-    if (restorestack > 0) {
-        args->dst.reg = RSP;
-        args->src.i64val = restorestack;
-        err = add(j, args);
-        if (slow(err != NULL)) {
-            return error(err, "while epilogue");
-        }
-    }
-
-    if (slow((j->end - j->begin) < 1)) {
-        err = reallocrw(j);
-        if (slow(err != NULL)) {
-            return err;
-        }
-    }
-
-    memcpy(j->begin, "\xc3", 1); /* ret */
-    j->begin += 1;
-
-    return NULL;
-}
-
-
-static Error *
-movregrsp(Jitfn *j, Jitvalue *args)
-{
-    u8     size;
-    Error  *err;
-
-    if (args->dst.disp != 0) {
-        if (args->dst.disp < -128 || args->dst.disp > 127) {
-            size = 8;
-        } else {
-            size = 5;
-        }
-    } else {
-        size = 4;
-    }
-
-    if (slow((j->end - j->begin) < size)) {
-        err = reallocrw(j);
-        if (slow(err != NULL)) {
-            return err;
-        }
-    }
-
-    switch (size) {
-    case 4:
-        memcpy(j->begin, "\x48\x89", 2);
-        j->begin += 2;
-        *j->begin++ = (8 * args->src.reg) + RSP;
-        *j->begin++ = 0x24;
-        break;
-
-    case 5:
-        memcpy(j->begin, "\x48\x89", 2);
-        j->begin += 2;
-        *j->begin++ = 0x44 + (8 * args->src.reg);
-        *j->begin++ = 0x24;
-        *j->begin++ = (i8) args->dst.disp;
-        break;
-    default:
-        expect(0);
-    }
-
-    return NULL;
-}
-
-
-static Error *
 xorregreg(Jitfn *j, Jitvalue *args)
 {
     Error  *err;
@@ -419,7 +339,7 @@ emitmovimmreg(Block *block, i32 src, Reg dst)
 {
     Insdata  data;
 
-    data.encoder = mov;
+    data.encoder = movq;
     data.args.mode = ImmReg;
     data.args.src.i64val = src;
     data.args.dst.reg = dst;
@@ -628,7 +548,7 @@ emitlookupfn(Block *block, u32 fnindex)
     data.args.mode = RegReg;
     data.args.src.reg = RAX;
     data.args.dst.reg = RDI;
-    data.encoder = mov;
+    data.encoder = movq;
     if (slow(arrayadd(block->insdata, &data) != OK)) {
         return newerror("failed to add instruction to block");
     }
@@ -662,7 +582,7 @@ emitpreparelocals(Block *block, Array * scratch, u32 nlocals, u32 nrets,
     data.args.mode = RegReg;
     data.args.dst.reg = RSI;
     data.args.src.reg = RSP;
-    data.encoder = mov;
+    data.encoder = movq;
 
     if (slow(arrayadd(block->insdata, &data) != OK)) {
         return newerror("failed to add instruction to block");
@@ -691,7 +611,7 @@ emitpreparelocals(Block *block, Array * scratch, u32 nlocals, u32 nrets,
     data.args.mode = RegReg;
     data.args.dst.reg = r2;
     data.args.src.reg = RSI;
-    data.encoder = mov;
+    data.encoder = movq;
 
     if (slow(arrayadd(block->insdata, &data) != OK)) {
         return newerror("failed to add instruction to block");

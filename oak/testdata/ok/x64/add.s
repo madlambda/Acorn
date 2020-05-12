@@ -2,6 +2,7 @@
 
 _start:
     # RegReg
+
     add %al, %al
     add %al, %cl
     add %al, %dl
@@ -686,23 +687,14 @@ _start:
     add 0x01, %rsi
     add 0x01, %rdi
 
-    add 0x01, %r8
-    add 0x01, %r9
-    add 0x01, %r10
-    add 0x01, %r11
-    add 0x01, %r12
-    add 0x01, %r13
-    add 0x01, %r14
-    add 0x01, %r15
-
-    add 0x01, %r8d
-    add 0x01, %r9d
-    add 0x01, %r10d
-    add 0x01, %r11d
-    add 0x01, %r12d
-    add 0x01, %r13d
-    add 0x01, %r14d
-    add 0x01, %r15d
+    add 0x01, %r8b
+    add 0x01, %r9b
+    add 0x01, %r10b
+    add 0x01, %r11b
+    add 0x01, %r12b
+    add 0x01, %r13b
+    add 0x01, %r14b
+    add 0x01, %r15b
 
     add 0x01, %r8w
     add 0x01, %r9w
@@ -713,67 +705,101 @@ _start:
     add 0x01, %r14w
     add 0x01, %r15w
 
-    add -0x1337, %al
-    add -0x1337, %cl
-    add -0x1337, %dl
-    add -0x1337, %bl
-    add -0x1337, %ah
-    add -0x1337, %ch
-    add -0x1337, %dh
-    add -0x1337, %bh
+    add 0x01, %r8d
+    add 0x01, %r9d
+    add 0x01, %r10d
+    add 0x01, %r11d
+    add 0x01, %r12d
+    add 0x01, %r13d
+    add 0x01, %r14d
+    add 0x01, %r15d
 
-    add -0x1337, %ax
-    add -0x1337, %cx
-    add -0x1337, %dx
-    add -0x1337, %bx
-    add -0x1337, %sp
-    add -0x1337, %bp
-    add -0x1337, %si
-    add -0x1337, %di
+    add 0x01, %r8
+    add 0x01, %r9
+    add 0x01, %r10
+    add 0x01, %r11
+    add 0x01, %r12
+    add 0x01, %r13
+    add 0x01, %r14
+    add 0x01, %r15
 
-    add -0x1337, %eax
-    add -0x1337, %ecx
-    add -0x1337, %edx
-    add -0x1337, %ebx
-    add -0x1337, %esp
-    add -0x1337, %ebp
-    add -0x1337, %esi
-    add -0x1337, %edi
+    add 0x1337, %al
+    add 0x1337, %cl
+    add 0x1337, %dl
+    add 0x1337, %bl
+    add 0x1337, %ah
+    add 0x1337, %ch
+    add 0x1337, %dh
+    add 0x1337, %bh
 
-    add -0x1337, %rax
-    add -0x1337, %rcx
-    add -0x1337, %rdx
-    add -0x1337, %rbx
-    add -0x1337, %rsp
-    add -0x1337, %rbp
-    add -0x1337, %rsi
-    add -0x1337, %rdi
+    add 0x1337, %ax
+    add 0x1337, %cx
+    add 0x1337, %dx
+    add 0x1337, %bx
+    add 0x1337, %sp
+    add 0x1337, %bp
+    add 0x1337, %si
+    add 0x1337, %di
 
-    add -0x1337, %r8
-    add -0x1337, %r9
-    add -0x1337, %r10
-    add -0x1337, %r11
-    add -0x1337, %r12
-    add -0x1337, %r13
-    add -0x1337, %r14
-    add -0x1337, %r15
+    add 0x1337, %eax
+    add 0x1337, %ecx
+    add 0x1337, %edx
+    add 0x1337, %ebx
+    add 0x1337, %esp
+    add 0x1337, %ebp
+    add 0x1337, %esi
+    add 0x1337, %edi
 
-    add -0x1337, %r8d
-    add -0x1337, %r9d
-    add -0x1337, %r10d
-    add -0x1337, %r11d
-    add -0x1337, %r12d
-    add -0x1337, %r13d
-    add -0x1337, %r14d
-    add -0x1337, %r15d
+    add 0x1337, %rax
+    add 0x1337, %rcx
+    add 0x1337, %rdx
+    add 0x1337, %rbx
+    add 0x1337, %rsp
+    add 0x1337, %rbp
+    add 0x1337, %rsi
+    add 0x1337, %rdi
 
-    add -0x1337, %r8w
-    add -0x1337, %r9w
-    add -0x1337, %r10w
-    add -0x1337, %r11w
-    add -0x1337, %r12w
-    add -0x1337, %r13w
-    add -0x1337, %r14w
-    add -0x1337, %r15w
+    add 0x1337, %r8b
+    add 0x1337, %r9b
+    add 0x1337, %r10b
+    add 0x1337, %r11b
+    add 0x1337, %r12b
+    add 0x1337, %r13b
+    add 0x1337, %r14b
+    add 0x1337, %r15b
+
+    add 0x1337, %r8w
+    add 0x1337, %r9w
+    add 0x1337, %r10w
+    add 0x1337, %r11w
+    add 0x1337, %r12w
+    add 0x1337, %r13w
+    add 0x1337, %r14w
+    add 0x1337, %r15w
+
+    add 0x1337, %r8d
+    add 0x1337, %r9d
+    add 0x1337, %r10d
+    add 0x1337, %r11d
+    add 0x1337, %r12d
+    add 0x1337, %r13d
+    add 0x1337, %r14d
+    add 0x1337, %r15d
+
+    add 0x1337, %r8
+    add 0x1337, %r9
+    add 0x1337, %r10
+    add 0x1337, %r11
+    add 0x1337, %r12
+    add 0x1337, %r13
+    add 0x1337, %r14
+    add 0x1337, %r15
 
     add 0x7fffffff, %eax
+
+    add $1, %al
+    add $1, %ax
+    add $1, %eax
+    add $1, %rax
+    add $1, %rdi
+    add $1, %r8
