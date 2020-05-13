@@ -18,6 +18,12 @@ typedef struct {
 } Limit;
 
 
+typedef enum {
+    Mov = 0,
+    Lea = 4,
+} Kindmove;
+
+
 static Error *addregreg(Jitfn *j, Jitvalue *args);
 static Error *addimmreg(Jitfn *j, Jitvalue *args);
 static Error *addmemreg(Jitfn *j, Jitvalue *args);
@@ -26,11 +32,14 @@ static Error *mov(Jitfn *j, Jitvalue *operands);
 static Error *movregreg(Jitfn *j, Jitvalue *args);
 static Error *movimmreg(Jitfn *j, Jitvalue *args);
 static Error *movmemreg(Jitfn *j, Jitvalue *args);
-static Error *movindreg(Jitfn *j, Jitvalue *args);
+static Error *movindreg(Jitfn *j, Jitvalue *args, Kindmove kind);
 static Error *movimmind(Jitfn *j, Jitvalue *args);
+static Error *xorregreg(Jitfn *j, Jitvalue *args);
+static Error *callrelreg(Jitfn *j, Jitvalue *args);
 
 
-static inline u8 rexfor(Reg src, Reg dst, u8 srcsize, u8 dstsize);
+static inline u8 rexfor(Reg src, Reg dst, u8 srcsize, u8 dstsize,
+    u8 defsrc, u8 defdst);
 static inline void prefixfor(u8 **begin, u8 size);
 
 
@@ -109,12 +118,52 @@ mov(Jitfn *j, Jitvalue *operands)
     case RegMem:
         return movmemreg(j, operands);
     case IndReg:
-        return movindreg(j, operands);
+    case RegInd:
+        return movindreg(j, operands, Mov);
     case ImmInd:
         return movimmind(j, operands);
+    default:
+        return newerror("addressing mode not supported: %d", operands->mode);
     }
+}
 
-    return newerror("addressing mode not supported: %d", operands->mode);
+
+Error *
+lea(Jitfn *j, Jitvalue *operands)
+{
+    switch (operands->mode) {
+    case IndReg:
+        return movindreg(j, operands, Lea);
+    default:
+        return newerror("addressing mode not supported: %d", operands->mode);
+    }
+}
+
+
+Error *
+callq(Jitfn *j, Jitvalue *operands)
+{
+    operands->size = 64;
+
+    switch (operands->mode) {
+    case RelReg:
+        return callrelreg(j, operands);
+    default:
+        return newerror("addressing mode not supported: %d", operands->mode);
+    }
+}
+
+
+static Error *
+callrelreg(Jitfn *j, Jitvalue *args)
+{
+    Error  *err;
+
+    growmem(j);
+
+    *j->begin++ = 0xff;
+    *j->begin++ = modrm(3, 2, args->dst.reg);
+    return NULL;
 }
 
 
@@ -158,6 +207,48 @@ ret(Jitfn *j, Jitvalue *operands)
     size = 0;
     operands->stacksize = &size;
     return epilogue(j, operands);
+}
+
+
+Error *
+prologue(Jitfn *j, Jitvalue *args)
+{
+    i32       *allocsize;
+    Error     *err;
+
+    allocsize = (i32 *) args->stacksize;
+
+    args->src.i64val = *allocsize;
+
+    if ((args->src.i64val % 16) != 0) {
+        *allocsize = ((args->src.i64val / 16)+1)*16;
+    }
+
+    immreg(args, -(*allocsize), RSP);
+    err = add(j, args);
+    if (slow(err != NULL)) {
+        return error(err, "encoding prologue");
+    }
+
+    regind(args, RDI, RSP, 0);
+    err = movq(j, args);
+    if (slow(err != NULL)) {
+        return error(err, "encoding prologue");
+    }
+
+    regind(args, RSI, RSP, 8);
+    err = movq(j, args);
+    if (slow(err != NULL)) {
+        return error(err, "encoding prologue");
+    }
+
+    regreg(args, RAX, RAX);
+    err = xorregreg(j, args);
+    if (slow(err != NULL)) {
+        return error(err, "encoding prologue");
+    }
+
+    return NULL;
 }
 
 
@@ -442,27 +533,38 @@ movmemreg(Jitfn *j, Jitvalue *args)
 
 
 static Error *
-movindreg(Jitfn *j, Jitvalue *args)
+movindreg(Jitfn *j, Jitvalue *args, Kindmove kind)
 {
-    u8     srcsize, dstsize, rexval, sibval, mod, hassib, nodisp;
-    u8     defopsize, defaddrsize;
-    Reg    srcn, dstn;
-    Error  *err;
+    u8      srcsize, dstsize, rexval, sibval, mod, hassib, nodisp;
+    u8      defopsize, defaddrsize;
+    Reg     srcn, dstn;
+    Error   *err;
+    Insarg  *src, *dst;
 
-    expect(args->mode == IndReg);
+    expect(args->mode == IndReg || args->mode == RegInd);
 
-    if (slow(regsizes[args->src.reg] < 16)) {
-        /*
-         * TODO(i4k): check if r8b...r15d is allowed
-         */
+    if (args->mode == IndReg) {
+        src = &args->src;
+        dst = &args->dst;
+
+    } else {
+        src = &args->dst;
+        dst = &args->src;
+
+        if (slow(kind == Lea)) {
+            return newerror("mode not supported for lea");
+        }
+    }
+
+    if (slow(regsizes[src->reg] < 16)) {
         return newerror("reg %d is not a valid base/index expression",
                         args->src.reg);
     }
 
     growmem(j);
 
-    srcsize = regsizes[args->src.reg];
-    dstsize = regsizes[args->dst.reg];
+    srcsize = regsizes[src->reg];
+    dstsize = regsizes[dst->reg];
 
     expect(srcsize <= 64 && dstsize <= 64);
 
@@ -477,20 +579,20 @@ movindreg(Jitfn *j, Jitvalue *args)
         prefixfor(&j->begin, dstsize);
     }
 
-    rexval = rexfor(args->src.reg, args->dst.reg, defaddrsize, defopsize);
+    rexval = rexfor(src->reg, dst->reg, srcsize, dstsize, defaddrsize, defopsize);
     if (rexval != 0) {
         *j->begin++ = rexval;
     }
 
-    srcn = args->src.reg % 8;
-    dstn = args->dst.reg % 8;
+    srcn = src->reg % 8;
+    dstn = dst->reg % 8;
 
     mod = 0;
     hassib = 0;
     nodisp = 0;
 
-    if (args->src.disp != 0) {
-        if (absolute(args->src.disp) > 127) {
+    if (src->disp != 0) {
+        if (absolute(src->disp) > 127) {
             mod = 2;
 
         } else {
@@ -498,7 +600,7 @@ movindreg(Jitfn *j, Jitvalue *args)
         }
     }
 
-    switch (args->src.reg) {
+    switch (src->reg) {
     case ESP:
     case RSP:
     case R12:
@@ -506,72 +608,44 @@ movindreg(Jitfn *j, Jitvalue *args)
         hassib = 1;
         sibval = sib(0, srcn, srcn);
 
-        goto movl;
+        break;
 
     case EBP:
     case RBP:
     case R13:
-        hassib = 1;
         if (mod == 1) {
-            sibval = sib(0, args->src.disp / 8, args->src.disp % 8);
+            hassib = 1;
+            sibval = sib(0, src->disp / 8, src->disp % 8);
             nodisp = 1;
-        } else {
+        } else if (args->mode == IndReg && mod != 2) {
             sibval = sib(0, 0, 0);
+            hassib = 1;
         }
         if (!mod) {
             mod = 1;
         }
 
-        goto movl;
-
-    case R8B:
-    case R8D:
-    case R9D:
-    case R10D:
-    case R11D:
-    case R13D:
-    case R14D:
-    case R15D:
-    case R8:
-    case R9:
-    case R10:
-    case R11:
-    case R14:
-    case R15:
-    case RAX:
-    case RCX:
-    case RDX:
-    case RBX:
-    case RSI:
-    case RDI:
-    case EAX:
-    case ECX:
-    case EDX:
-    case EBX:
-    case ESI:
-    case EDI:
-        goto movl;
-
-    default:
-        return newerror("register %d not implemented", args->src.reg);
+        break;
     }
 
-    expect(0);
+    if (kind == Mov) {
+        *j->begin++ = 0x88 | ((args->mode == IndReg) << 1) | (dstsize != 8);
 
-movl:
+    } else {
+        *j->begin++ = (kind + 0x88) | (dstsize != 8);
+    }
 
-    *j->begin++ = 0x8a | (dstsize != 8);
     *j->begin++ = modrm(mod, dstn, srcn);
 
     if (hassib) {
         *j->begin++ = sibval;
     }
 
-    if (!nodisp && args->src.disp != 0) {
+    if (!nodisp && src->disp != 0) {
         if (mod == 1) {
-            *j->begin++ = args->src.disp;
+            *j->begin++ = src->disp;
         } else {
-            if (slow(u32encode(args->src.disp, &j->begin, j->end) != OK)) {
+            if (slow(u32encode(src->disp, &j->begin, j->end) != OK)) {
                 return newerror("failed to encode displacement");
             }
         }
@@ -585,6 +659,7 @@ static Error *
 movimmind(Jitfn *j, Jitvalue *args)
 {
     u8            regn, dstsize, defaddrsize, rexval, mod, sibval, hassib;
+    u8            nodisp;
     Error         *err;
     Insarg        *src, *dst;
     const Limit   *lim;
@@ -604,18 +679,6 @@ movimmind(Jitfn *j, Jitvalue *args)
 
     expect(dstsize <= 64);
 
-    defaddrsize = 64;
-
-    if (dstsize != defaddrsize) {
-        prefixfor(&j->begin, dstsize);
-    }
-
-    rexval = rexfor(args->dst.reg, 0, 64, 32);
-    if (rexval != 0) {
-        *j->begin++ = rexval;
-    }
-
-    regn = dst->reg % 8;
     lim = &limits[args->size / 8];
 
     checkimm(src->i64val, lim->min, lim->max);
@@ -624,12 +687,37 @@ movimmind(Jitfn *j, Jitvalue *args)
         return newerror("use movabs");
     }
 
+    defaddrsize = 64;
+
+    if (dstsize != defaddrsize) {
+        prefixfor(&j->begin, dstsize);
+    }
+
+    rexval = rexfor(args->dst.reg, 0, args->size, 64, 32, 64);
+    if (rexval != 0) {
+        *j->begin++ = rexval;
+    } else if (args->size == 64) {
+        *j->begin++ = rex(1, 0, 0, 0);
+    }
+
+    regn = dst->reg % 8;
+
     if (dstsize == 16) {
         *j->begin++ = 0x66;
     }
 
+    nodisp = 0;
     hassib = 0;
     mod = 0;
+
+    if (dst->disp != 0) {
+        if (absolute(dst->disp) > 127) {
+            mod = 2;
+
+        } else {
+            mod = 1;
+        }
+    }
 
     switch (dst->reg) {
     case ESP:
@@ -647,10 +735,17 @@ movimmind(Jitfn *j, Jitvalue *args)
     case R13B:
     case R13W:
     case R13D:
-        mod = 1;
-        sibval = sib(0, 0, 0);
-        hassib = 1;
-        break;
+        if (mod == 1) {
+            hassib = 1;
+            sibval = sib(0, dst->disp / 8, dst->disp % 8);
+            nodisp = 1;
+        } else if (mod != 2) {
+            sibval = sib(0, 0, 0);
+            hassib = 1;
+        }
+        if (!mod) {
+            mod = 1;
+        }
     }
 
     *j->begin++ = 0xc6 | (args->size != 8);
@@ -660,7 +755,19 @@ movimmind(Jitfn *j, Jitvalue *args)
         *j->begin++ = sibval;
     }
 
-    if (slow(uencode(src->i64val, args->size, &j->begin, j->end) != OK)) {
+    if (!nodisp && dst->disp != 0) {
+        if (mod == 1) {
+            *j->begin++ = dst->disp;
+        } else {
+            if (slow(u32encode(dst->disp, &j->begin, j->end) != OK)) {
+                return newerror("failed to encode displacement");
+            }
+        }
+    }
+
+    if (slow(uencode(src->i64val, args->size > 32 ? 32 : args->size,
+                     &j->begin, j->end) != OK))
+    {
         return newerror("failed to encode %dbit immediate", args->size);
     }
 
@@ -669,17 +776,17 @@ movimmind(Jitfn *j, Jitvalue *args)
 
 
 static inline u8
-rexfor(Reg src, Reg dst, u8 defsrcsize, u8 defdstsize)
+rexfor(Reg src, Reg dst, u8 srcsize, u8 dstsize, u8 defsrcsize, u8 defdstsize)
 {
     u8  size, val;
 
     size = 0;
 
-    if (regsizes[src] == 64 && defsrcsize != 64) {
+    if (srcsize == 64 && defsrcsize != 64) {
         size = 1;
     }
 
-    if (regsizes[dst] == 64 && defdstsize != 64) {
+    if (dstsize == 64 && defdstsize != 64) {
         size = 1;
     }
 
@@ -710,4 +817,19 @@ prefixfor(u8 **begin, u8 size)
     }
 
     *begin += 1;
+}
+
+
+static Error *
+xorregreg(Jitfn *j, Jitvalue * unused(args))
+{
+    Error  *err;
+
+    growmem(j);
+
+    *j->begin++ = 0x48;
+    *j->begin++ = 0x31;
+    *j->begin++ = 0xc0;
+
+    return NULL;
 }

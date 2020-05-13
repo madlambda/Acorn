@@ -33,6 +33,8 @@ ASM_TESTDATA=   testdata/ok/call1/output.s     \
                 testdata/ok/emptyfunc/output.s \
                 testdata/ok/x64/add.s          \
                 testdata/ok/x64/mov.s          \
+                testdata/ok/x64/lea.s          \
+                testdata/ok/x64/call.s         \
 
 
 LIBOAK=$(OBJDIR)/lib/liboak.a

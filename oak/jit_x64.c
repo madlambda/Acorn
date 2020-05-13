@@ -16,8 +16,6 @@
 #include "x64.h"
 
 
-static Error *prologue(Jitfn *j, Jitvalue *args);
-static Error *xorregreg(Jitfn *j, Jitvalue *args);
 static Error *funcall(Jitfn *j, Jitvalue *args);
 static Error *sub(Jitfn *j, Jitvalue *args);
 static Error *movimm32regdisp(Jitfn *j, Jitvalue *args);
@@ -211,53 +209,6 @@ emitprologue(Block *block, u32 *allocsize)
 
 
 static Error *
-prologue(Jitfn *j, Jitvalue *args)
-{
-    i32       *allocsize;
-    Error     *err;
-    Jitvalue  args2;
-
-    allocsize = (i32 *) args->stacksize;
-
-    args->src.i64val = *allocsize;
-
-    if ((args->src.i64val % 16) != 0) {
-        args->src.i64val = ((args->src.i64val / 16)+1)*16;
-    }
-
-    args->dst.reg = RSP;
-    err = sub(j, args);
-    if (slow(err != NULL)) {
-        return error(err, "encoding prologue");
-    }
-
-    memset(&args2, 0, sizeof(Jitvalue));
-    args2.src.reg = RDI;
-    args2.dst.disp = 0;
-    err = movq(j, &args2);
-    if (slow(err != NULL)) {
-        return error(err, "encoding prologue");
-    }
-
-    args2.src.reg = RSI;
-    args2.dst.disp = 8;
-    err = movq(j, &args2);
-    if (slow(err != NULL)) {
-        return error(err, "encoding prologue");
-    }
-
-    args2.src.reg = RAX;
-    args2.dst.reg = RAX;
-    err = xorregreg(j, &args2);
-    if (slow(err != NULL)) {
-        return error(err, "encoding prologue");
-    }
-
-    return NULL;
-}
-
-
-static Error *
 sub(Jitfn *j, Jitvalue *args)
 {
     u8     size;
@@ -311,25 +262,6 @@ emitepilogue(Block *block, u32 *restoresize)
         return newerror("failed to add instruction to block");
     }
 
-    return NULL;
-}
-
-
-static Error *
-xorregreg(Jitfn *j, Jitvalue *args)
-{
-    Error  *err;
-
-    if (slow((j->end - j->begin) < 3)) {
-        err = reallocrw(j);
-        if (slow(err != NULL)) {
-            return err;
-        }
-    }
-
-    *j->begin++ = 0x48;
-    *j->begin++ = 0x31;
-    *j->begin++ = (u8) ((args->src.reg * 8) + args->dst.reg) + 0xc0;
     return NULL;
 }
 

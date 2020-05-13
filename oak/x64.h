@@ -62,10 +62,27 @@
     } while (0)
 
 
-#define immind(a, imm, r)                                                     \
+#define regind(a, rsrc, rdst, displacement)                                   \
+    do {                                                                      \
+        (a)->mode = RegInd;                                                   \
+        (a)->dst.reg = rdst;                                                  \
+        (a)->dst.disp = displacement;                                         \
+        (a)->src.reg = rsrc;                                                  \
+    } while (0)
+
+
+#define immind(a, imm, r, displacement)                                       \
     do {                                                                      \
         (a)->mode = ImmInd;                                                   \
         (a)->src.i64val = imm;                                                \
+        (a)->dst.reg = r;                                                     \
+        (a)->dst.disp = displacement;                                         \
+    } while (0)
+
+
+#define relreg(a, r)                                                          \
+    do {                                                                      \
+        (a)->mode = RelReg;                                                   \
         (a)->dst.reg = r;                                                     \
     } while (0)
 
@@ -220,9 +237,13 @@ Error   *movw(Jitfn *j, Jitvalue *operands);
 Error   *movl(Jitfn *j, Jitvalue *operands);
 Error   *movq(Jitfn *j, Jitvalue *operands);
 
+Error   *lea(Jitfn *j, Jitvalue *operands);
+
+Error   *callq(Jitfn *j, Jitvalue *operands);
 Error   *nop(Jitfn *j, Jitvalue *operands);
 Error   *ret(Jitfn *j, Jitvalue *operands);
 
+Error   *prologue(Jitfn *j, Jitvalue *args);
 Error   *epilogue(Jitfn *j, Jitvalue *operands);
 
 

@@ -42,9 +42,14 @@ typedef void (*Fn)(Data *d);
 
 
 static Error *test(const Testcase *tc);
-static Error *test_exec();
+static Error *test_execbasic();
+static Error *test_execinitlocal();
 static Error *test_add(Jitfn *j);
 static Error *test_mov(Jitfn *j);
+static Error *test_lea(Jitfn *j);
+static Error *test_call(Jitfn *jit);
+
+static Error *callback(Function *fn, Local *locals);
 
 
 static const Testrange  movranges[8] = {
@@ -54,7 +59,7 @@ static const Testrange  movranges[8] = {
     {.start = RAX,  .end = RDI,     .enc = movq},
     {.start = R8B,  .end = R15B,    .enc = movb},
     {.start = R8W,  .end = R15W,    .enc = movw},
-    {.start = R8D,  .end = R15D,     .enc = movl},
+    {.start = R8D,  .end = R15D,    .enc = movl},
     {.start = R8,   .end = R15,     .enc = movq},
 };
 
@@ -70,6 +75,16 @@ static const Testcase  testcases[] = {
         .want   = "testdata/ok/x64/mov.jit",
         .err    = NULL,
     },
+    {
+        .testfn = test_lea,
+        .want   = "testdata/ok/x64/lea.jit",
+        .err    = NULL,
+    },
+    {
+        .testfn = test_call,
+        .want   = "testdata/ok/x64/call.jit",
+        .err    = NULL,
+    },
 };
 
 
@@ -83,7 +98,14 @@ main()
     fmtadd('J', fmtjit);
     fmtadd('C', fmtjitcmp);
 
-    err = test_exec();
+    err = test_execbasic();
+    if (slow(err != NULL)) {
+        cprint("error: %e\n", err);
+        errorfree(err);
+        return 1;
+    }
+
+    err = test_execinitlocal();
     if (slow(err != NULL)) {
         cprint("error: %e\n", err);
         errorfree(err);
@@ -107,7 +129,7 @@ main()
 
 
 static Error *
-test_exec()
+test_execbasic()
 {
     Fn        fn;
     Data      data;
@@ -126,13 +148,19 @@ test_exec()
     /*
      * _start:
      * mov $1, (%rdi)
+     * add $<u16offset>, %rdi
+     * mov $1, %rdi
+     * add $<u32offset>, %rsi
+     * mov $1, %rdi
+     * add $<u64offset>, %rdi
+     * mov $1, %rdi
      * ret
      */
 
     memset(&arg, 0, sizeof(Jitvalue));
     memset(&data, 0, sizeof(Data));
 
-    immind(&arg, 1, RDI);
+    immind(&arg, 1, RDI, 0);
     err = movb(&jit, &arg);
     if (slow(err != NULL)) {
         return error(err, "exec test: mov encode");
@@ -144,7 +172,7 @@ test_exec()
         return error(err, "exec test: add encode");
     }
 
-    immind(&arg, 1, RDI);
+    immind(&arg, 1, RDI, 0);
     err = movb(&jit, &arg);
     if (slow(err != NULL)) {
         return error(err, "exec test: mov encode");
@@ -156,7 +184,7 @@ test_exec()
         return error(err, "exec test: add encode");
     }
 
-    immind(&arg, 1, RDI);
+    immind(&arg, 1, RDI, 0);
     err = movb(&jit, &arg);
     if (slow(err != NULL)) {
         return error(err, "exec test: mov encode");
@@ -168,7 +196,7 @@ test_exec()
         return error(err, "exec test: add encode");
     }
 
-    immind(&arg, 1, RDI);
+    immind(&arg, 1, RDI, 0);
     err = movb(&jit, &arg);
     if (slow(err != NULL)) {
         return error(err, "exec test: mov encode");
@@ -196,6 +224,256 @@ test_exec()
         cprint("%d(u8),%d(u16),%d(u32),%d(u64)\n", data.u8val, data.u16val,
                data.u32val, data.u64val);
         return newerror("unexpected data");
+    }
+
+    freejit(&jit);
+
+    return NULL;
+}
+
+
+static Error *
+callback(Function * unused(fn), Local *locals)
+{
+    u32  i;
+
+    for (i = 0; i < len(locals->locals); i++) {
+        cprint("called with value: %d", i);
+    }
+
+    if (slow(locals->locals->nalloc != 2)) {
+        return newerror("invalid number of locals");
+    }
+
+    if (slow(locals->returns->nalloc != 1)) {
+        return newerror("invalid number of returns");
+    }
+
+    cprint("callback called from asm\n");
+
+    return NULL;
+}
+
+
+static Error *
+test_execinitlocal()
+{
+    u32       stacksize, nlocals, nrets, localsoff, retsoff;
+    Data      data;
+    Error     *err;
+    Jitfn     jit;
+    Local     locals;
+    Funcall   fncall;
+    Function  func;
+    Jitvalue  arg;
+
+    err = allocrw(&jit, 4096);
+    if (slow(err != NULL)) {
+        return error(err, "allocating jit data");
+    }
+
+    jit.begin = jit.data;
+    jit.end = (jit.data + jit.size);
+
+    /*
+     * _start:
+     * add $0x10 + sizeof(Local) + arraytotalsize(nlocals, sizeof(Value))
+     *     + arraytotalsize(nrets, sizeof(Value));
+     * ret
+     */
+
+    memset(&arg, 0, sizeof(Jitvalue));
+    memset(&data, 0, sizeof(Data));
+
+    nlocals = 2;
+    nrets = 1;
+
+    stacksize = 0x10 + sizeof(Local) + arraytotalsize(nlocals, sizeof(Value))
+                + arraytotalsize(nrets, sizeof(Value));
+
+    arg.stacksize = &stacksize;
+
+    err = prologue(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "prologue");
+    }
+
+    /* RCX = localbuf */
+    indreg(&arg, 0x18, RSP, RCX);
+    err = lea(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq 0x18(rsp), rcx");
+    }
+
+    /* RCX = localbuf.locals */
+    immreg(&arg, offsetof(Local, locals), RCX);
+    err = add(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "add $%d, RCX", offsetof(Local, locals));
+    }
+
+    localsoff = 0x18 + sizeof(Local);
+
+    /* RDX = localsarraybuf */
+    indreg(&arg, localsoff, RSP, RDX);
+    err = lea(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "lea $%d, RDX", localsoff);
+    }
+
+    /* localsbuf.locals = localsarraybuf */
+    regind(&arg, RDX, RCX, 0);
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq RDX, (RCX)");
+    }
+
+    immind(&arg, 0, RDX, offsetof(Array, len));
+    err = movl(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $%d, %d(RDX)", 0, offsetof(Array, len));
+    }
+
+    immind(&arg, nlocals, RDX, offsetof(Array, nalloc));
+    err = movl(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $%d, %d(RDX)", nlocals, offsetof(Array, nalloc));
+    }
+
+    immind(&arg, sizeof(Value), RDX, offsetof(Array, size));
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $%d, %d(RDX)", sizeof(Value), offsetof(Array, size));
+    }
+
+    immind(&arg, 0, RDX, offsetof(Array, heap));
+    err = movb(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $0, %d(RDX)", offsetof(Array, heap));
+    }
+
+    localsoff += sizeof(Array);
+    indreg(&arg, localsoff, RSP, RCX);
+    err = lea(&jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    regind(&arg, RCX, RDX, offsetof(Array, items));
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq RCX, %d(RDX)", offsetof(Array, items));
+    }
+
+    /* RCX = localbuf */
+    indreg(&arg, 0x18, RSP, RCX);
+    err = lea(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq 0x18(rsp), rcx");
+    }
+
+    /* RCX = localbuf.returns */
+    immreg(&arg, offsetof(Local, returns), RCX);
+    err = add(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "add $%d, RCX", offsetof(Local, returns));
+    }
+
+    /* RDX = returnsarraybuf */
+    retsoff = localsoff + (sizeof(Value) * nlocals);
+    indreg(&arg, retsoff, RSP, RDX);
+    err = lea(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "lea $%d, RDX", localsoff);
+    }
+
+    /* localbuf.returns = returnsarraybuf */
+    regind(&arg, RDX, RCX, 0);
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "mov RDX, (RCX)");
+    }
+
+    immind(&arg, 0, RDX, offsetof(Array, len));
+    err = movl(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $%d, %d(RDX)", 0, offsetof(Array, len));
+    }
+
+    immind(&arg, nrets, RDX, offsetof(Array, nalloc));
+    err = movl(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $%d, %d(RDX)", nlocals, offsetof(Array, nalloc));
+    }
+
+    immind(&arg, sizeof(Value), RDX, offsetof(Array, size));
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $%d, %d(RDX)", sizeof(Value), offsetof(Array, size));
+    }
+
+    immind(&arg, 0, RDX, offsetof(Array, heap));
+    err = movb(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq $0, %d(RDX)", offsetof(Array, heap));
+    }
+
+    retsoff += sizeof(Array);
+    indreg(&arg, localsoff, RSP, RCX);
+    err = lea(&jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    regind(&arg, RCX, RDX, offsetof(Array, items));
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq RCX, %d(RDX)", offsetof(Array, items));
+    }
+
+    indreg(&arg, 0, RSP, RAX);
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq 0(RSP), RAX");
+    }
+
+    indreg(&arg, 0, RAX, RAX);
+    err = movq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "movq 0(RAX), RAX");
+    }
+
+    immreg(&arg, 0, RDI);
+    movq(&jit, &arg);
+
+    indreg(&arg, 0x18, RSP, RSI);
+    lea(&jit, &arg);
+
+    relreg(&arg, RAX);
+    err = callq(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "callq");
+    }
+
+    err = epilogue(&jit, &arg);
+    if (slow(err != NULL)) {
+        return error(err, "exec test: ret encode");
+    }
+
+    err = mkexec(&jit);
+    if (slow(err != NULL)) {
+        return error(err, "making executable memory");
+    }
+
+    fncall = NULL;
+
+    copyptr((ptr) &fncall, (ptr) &jit.data);
+
+    func.fn = callback;
+
+    err = fncall(&func, &locals);
+    if (slow(err != NULL)) {
+        return error(err, "exec fn");
     }
 
     freejit(&jit);
@@ -1031,6 +1309,56 @@ test_mov(Jitfn *jit)
         return err;
     }
 
+    /* RegInd */
+
+    for (i = 0; i < LASTREG; i++) {
+        regind(&arg, i, RAX, 0);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = 0; i < LASTREG; i++) {
+        regind(&arg, i, RAX, 8);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = 0; i < LASTREG; i++) {
+        regind(&arg, i, RAX, -8);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = 0; i < LASTREG; i++) {
+        regind(&arg, i, RAX, 1000);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = 0; i < LASTREG; i++) {
+        regind(&arg, i, RBP, 1000);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = 0; i < LASTREG; i++) {
+        regind(&arg, i, RSP, 1000);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
     /* RegMem */
 
     for (i = AL; i < LASTREG; i++) {
@@ -1056,7 +1384,7 @@ test_mov(Jitfn *jit)
     /* TODO(i4k): test address bigger than INT32_MAX */
 
     for (i = EAX; i <= EDI; i++) {
-        immind(&arg, 1, i);
+        immind(&arg, 1, i, 0);
         err = movb(jit, &arg);
         if (slow(err != NULL)) {
             return err;
@@ -1064,7 +1392,7 @@ test_mov(Jitfn *jit)
     }
 
     for (i = RAX; i <= RDI; i++) {
-        immind(&arg, 1, i);
+        immind(&arg, 1, i, 0);
         err = movb(jit, &arg);
         if (slow(err != NULL)) {
             return err;
@@ -1072,7 +1400,7 @@ test_mov(Jitfn *jit)
     }
 
     for (i = R8D; i <= R15D; i++) {
-        immind(&arg, 1, i);
+        immind(&arg, 1, i, 0);
         err = movb(jit, &arg);
         if (slow(err != NULL)) {
             return err;
@@ -1080,11 +1408,250 @@ test_mov(Jitfn *jit)
     }
 
     for (i = R8; i <= R15; i++) {
-        immind(&arg, 1, i);
+        immind(&arg, 1, i, 0);
         err = movb(jit, &arg);
         if (slow(err != NULL)) {
             return err;
         }
+    }
+
+    for (i = EAX; i <= EDI; i++) {
+        immind(&arg, 1, i, 8);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = RAX; i <= RDI; i++) {
+        immind(&arg, 1, i, 8);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8D; i <= R15D; i++) {
+        immind(&arg, 1, i, 8);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        immind(&arg, 1, i, 8);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = EAX; i <= EDI; i++) {
+        immind(&arg, 1, i, 16);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = RAX; i <= RDI; i++) {
+        immind(&arg, 1, i, 16);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8D; i <= R15D; i++) {
+        immind(&arg, 1, i, 16);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        immind(&arg, 1, i, 16);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = EAX; i <= EDI; i++) {
+        immind(&arg, 1, i, 1000);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = RAX; i <= RDI; i++) {
+        immind(&arg, 1, i, 1000);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8D; i <= R15D; i++) {
+        immind(&arg, 1, i, 1000);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        immind(&arg, 1, i, 1000);
+        err = movb(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = EAX; i <= EDI; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movl(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = RAX; i <= RDI; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movl(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8D; i <= R15D; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movl(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movl(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = EAX; i <= EDI; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = RAX; i <= RDI; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8D; i <= R15D; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        immind(&arg, 0xffffff, i, 1000);
+        err = movq(jit, &arg);
+        if (slow(err != NULL)) {
+            return err;
+        }
+    }
+
+    return NULL;
+}
+
+
+static Error *
+test_lea(Jitfn *jit)
+{
+    Reg       i;
+    Error     *err;
+    Jitvalue  arg;
+
+    memset(&arg, 0, sizeof(Jitvalue));
+
+    for (i = AX; i <= RDI; i++) {
+        indreg(&arg, 0, RAX, i);
+        err = lea(jit, &arg);
+        if (slow(err != NULL)) {
+            return error(err, "lea");
+        }
+    }
+
+    for (i = R8; i <= R15; i++) {
+        indreg(&arg, 0, RAX, i);
+        err = lea(jit, &arg);
+        if (slow(err != NULL)) {
+            return error(err, "lea");
+        }
+    }
+
+    for (i = R8D; i <= R15D; i++) {
+        indreg(&arg, 0, RAX, i);
+        err = lea(jit, &arg);
+        if (slow(err != NULL)) {
+            return error(err, "lea");
+        }
+    }
+
+    for (i = EAX; i <= RDI; i++) {
+        indreg(&arg, 0, i, RAX);
+        err = lea(jit, &arg);
+        if (slow(err != NULL)) {
+            return error(err, "lea");
+        }
+    }
+
+    for (i = EAX; i <= RDI; i++) {
+        indreg(&arg, 8, i, RAX);
+        err = lea(jit, &arg);
+        if (slow(err != NULL)) {
+            return error(err, "lea");
+        }
+    }
+
+    for (i = EAX; i <= RDI; i++) {
+        indreg(&arg, 1000, i, RAX);
+        err = lea(jit, &arg);
+        if (slow(err != NULL)) {
+            return error(err, "lea");
+        }
+    }
+
+    return NULL;
+}
+
+
+static Error *
+test_call(Jitfn *jit)
+{
+    Error     *err;
+    Jitvalue  arg;
+
+    memset(&arg, 0, sizeof(Jitvalue));
+
+    relreg(&arg, RAX);
+    err = callq(jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
     }
 
     return NULL;
