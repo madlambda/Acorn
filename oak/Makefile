@@ -24,7 +24,7 @@ SOURCES=test.c     \
 TEST_SOURCES=   bin_test.c      \
                 module_test.c   \
                 jit_x64_test.c  \
-#                instance_test.c \
+                instance_test.c \
 #                jit_test.c      \
 
 

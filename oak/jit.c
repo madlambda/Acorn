@@ -40,6 +40,8 @@ compile(Module *m)
     }
 
     for (i = 0; i < len(m->codes); i++) {
+        memset(&fn, 0, sizeof(Function));
+
         fn.code = arrayget(m->codes, i);
         type = arrayget(m->functypes, i);
         fn.sig = *type;
@@ -157,7 +159,16 @@ allocrw(Jitfn *j, size_t size)
 void
 freejit(Jitfn *j)
 {
-    munmap(j->data, j->size);
+    Block  *b;
+    if (j->size > 0) {
+        munmap(j->data, j->size);
+    }
+
+    if (j->blocks != NULL) {
+        b = arrayget(j->blocks, 0);
+        freearray(b->insdata);
+        freearray(j->blocks);
+    }
 }
 
 

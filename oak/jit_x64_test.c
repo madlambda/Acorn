@@ -137,6 +137,8 @@ test_execbasic()
     Jitfn     jit;
     Jitvalue  arg;
 
+    memset(&jit, 0, sizeof(Jitfn));
+
     err = allocrw(&jit, 4096);
     if (slow(err != NULL)) {
         return error(err, "allocating jit data");
@@ -258,7 +260,8 @@ callback(Function * unused(fn), Local *locals)
 static Error *
 test_execinitlocal()
 {
-    u32       stacksize, nlocals, nrets, localsoff, retsoff;
+    u32       nlocals, nrets, localsoff, retsoff;
+    i64       stacksize;
     Data      data;
     Error     *err;
     Jitfn     jit;
@@ -266,6 +269,8 @@ test_execinitlocal()
     Funcall   fncall;
     Function  func;
     Jitvalue  arg;
+
+    memset(&jit, 0, sizeof(Jitfn));
 
     err = allocrw(&jit, 4096);
     if (slow(err != NULL)) {

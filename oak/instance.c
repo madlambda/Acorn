@@ -24,6 +24,7 @@
 
 static Error *initmem(Instance *instance);
 static ExportDecl *searchexport(Module *m, String *field);
+static void *getfn(void *ins, u32 index);
 
 
 Error *
@@ -97,6 +98,8 @@ instantiate(Instance *ins, Array *imports)
     if (slow(ins->stack == NULL)) {
         return newerror("failed to allocate stack");
     }
+
+    ins->getfn = getfn;
 
     return NULL;
 }
@@ -231,6 +234,16 @@ vminvoke(Instance *ins, const char *func, Array *returns)
     }
 
     return NULL;
+}
+
+
+static void *
+getfn(void *ins, u32 index)
+{
+    Instance  *instance;
+
+    instance = ins;
+    return arrayget(instance->funcs, index);
 }
 
 

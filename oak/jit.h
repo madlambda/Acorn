@@ -26,6 +26,7 @@ typedef struct {
     u8          *end;
     size_t      size;
     Array       *blocks;        /* of Block */
+    i64         allocstack;
 } Jitfn;
 
 
@@ -44,7 +45,7 @@ typedef struct {
     u8              size;       /* Instruction size (optional) */
     Insarg          src;
     Insarg          dst;
-    u32             *stacksize; /* used by jit prologue/epilogue */
+    i64             *stacksize; /* used by jit prologue/epilogue */
 } Jitvalue;
 
 

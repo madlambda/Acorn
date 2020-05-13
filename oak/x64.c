@@ -202,7 +202,7 @@ movq(Jitfn *j, Jitvalue *args)
 Error *
 ret(Jitfn *j, Jitvalue *operands)
 {
-    u32  size;
+    i64  size;
 
     size = 0;
     operands->stacksize = &size;
@@ -213,10 +213,10 @@ ret(Jitfn *j, Jitvalue *operands)
 Error *
 prologue(Jitfn *j, Jitvalue *args)
 {
-    i32       *allocsize;
+    i64       *allocsize;
     Error     *err;
 
-    allocsize = (i32 *) args->stacksize;
+    allocsize = (i64 *) args->stacksize;
 
     args->src.i64val = *allocsize;
 

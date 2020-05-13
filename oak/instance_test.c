@@ -16,13 +16,6 @@ int test1();
 int test2();
 
 
-/*static Error *
-imported_func(Function * unused(thisfn), Local * unused(local))
-{
-    return OK;
-}
-*/
-
 /*
 // calls other
 static Error *
@@ -52,17 +45,17 @@ imported_func(Function *thisfn, Local * unused(local))
 
 
 static Error *
-imported_func(Function * unused(thisfn), Local * unused(local))
+imported_func(Function * unused(thisfn), Local *local)
 {
-    //Value  *v;
+    Value  *v;
 
-    /*if (slow(len(local->locals) != 1)) {
+    if (slow(len(local->locals) != 1)) {
         return newerror("invalid number of locals: %d != %d",
                         len(local->locals), 1);
-    }*/
+    }
 
-    //v = arraypop(local->locals);
-    cprint("imported_func called\n");
+    v = arraypop(local->locals);
+    cprint("imported_func called: %d(u32)\n", v->u.ival);
 
     return NULL;
 }
@@ -156,14 +149,18 @@ test2()
     err = loadmodule(&m, "testdata/ok/emptyfunc/input.wasm");
     if (slow(err != NULL)) {
         cprint("error: %e\n", err);
+        errorfree(err);
         return 1;
     }
 
     err = compile(&m);
     if (slow(err != NULL)) {
         cprint("error: %e\n", err);
+        errorfree(err);
         return 1;
     }
+
+    closemodule(&m);
 
     return 0;
 }

@@ -956,4 +956,8 @@ closemodule(Module *m)
 
         freearray(m->codes);
     }
+
+    if (m->funcs != NULL) {
+        freearray(m->funcs);
+    }
 }
