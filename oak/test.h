@@ -2,7 +2,6 @@
  * Copyright (C) Madlambda Authors.
  */
 
-
 #ifndef _OAK_TEST_H_
 
 

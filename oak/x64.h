@@ -128,6 +128,9 @@
     } while (0)
 
 
+#define r32(r64)  (r64 - 8)
+
+
 /* Preserve the order of the enumeration below! */
 typedef enum {
     AL,

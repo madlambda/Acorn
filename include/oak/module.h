@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Madlambda Authors
+ * Copyright (C) Madlambda Authors.
  */
 
 #ifndef _OAK_MODULE_H_

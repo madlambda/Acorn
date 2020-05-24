@@ -2226,3 +2226,9 @@ _start:
     movq $0xffffff, 1000(%r13)
     movq $0xffffff, 1000(%r14)
     movq $0xffffff, 1000(%r15)
+
+    movb $1, (%rcx)
+    movl %edx, 4(%rcx)
+    movq 0x10(%rcx), %rcx
+    movl $1, (%rcx)
+    movb $1, 0(%rcx)

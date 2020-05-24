@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Madlambda Authors
+ * Copyright (C) Madlambda Authors.
  */
 
 #include <stdio.h>
@@ -129,7 +129,7 @@ loadmodule(Module *mod, const char *filename)
 
 free:
 
-    free(mod);
+    closemodule(mod);
 
 fail:
 
@@ -181,7 +181,7 @@ parsesect(u8 **begin, const u8 *end, Section *s)
     }
 
     if (slow(u32vdecode(begin, end, &s->len) != OK)) {
-        return newerror("malformed section len");
+        return newerror("malformed section len: %d", s->id);
     }
 
     s->data = *begin;
@@ -266,7 +266,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
             value = -i8val;
 
-            if (slow(arrayadd(type.params, &value) != OK)) {
+            if (slow(arrayadd(type.rets, &value) != OK)) {
                 return earrayadd();
             }
         }
@@ -568,14 +568,14 @@ parseglobals(Module *m, u8 *begin, const u8 *end)
             break;
 
         case Opf64const:
-            if (slow(u32decode(&begin, end, &global.u.f32val) != OK)) {
+            if (slow(u64decode(&begin, end, &global.u.f64val) != OK)) {
                 emalformed("f64.const", globalsect);
             }
 
             break;
 
         default:
-            return newerror("unsupported global expression");
+            return newerror("unsupported global expression: %d", opcode);
         }
 
         if (slow(arrayadd(m->globals, &global) != OK)) {

@@ -56,7 +56,7 @@ instantiate(Instance *ins, Array *imports)
         return newerror("missing imports");
     }
 
-    /* TODO(i4k): build a hash map at compile() time */
+    /* TODO(i4k): build a hash map at wasm compile() time */
     for (i = 0; i < len(m->imports); i++) {
         importdecl = arrayget(m->imports, i);
 
@@ -145,7 +145,7 @@ closeinstance(Instance *ins)
 
 
 Error *
-vminvoke(Instance *ins, const char *func, Array *returns)
+vminvoke(Instance *ins, const char *func, Array *params, Array *returns)
 {
     u32         i, nlocals, nrets;
     Error       *err;
@@ -192,13 +192,15 @@ vminvoke(Instance *ins, const char *func, Array *returns)
     initarrayfrom(local.locals, nlocals, sizeof(Value), 0);
     initarrayfrom(local.returns, nrets, sizeof(Value), 0);
 
-    /* TODO(i4k): pass 1337 as params for now */
+    if (slow(len(function->sig.params) != len(params))) {
+        return newerror("function %s expects %d args but %d given",
+                        func, len(function->sig.params), len(params));
+    }
 
     for (i = 0; i < len(function->sig.params); i++) {
-        value.type = I32;
-        value.u.ival = 1337;
-
-        arrayadd(local.locals, &value);
+        if (slow(arrayadd(local.locals, arrayget(params, i)) != OK)) {
+            return newerror("failed to add parameter");
+        }
     }
 
     for (i = 0; i < len(function->code->locals); i++) {

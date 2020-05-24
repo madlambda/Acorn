@@ -61,7 +61,8 @@ typedef struct {
 
 
 Error   *instantiate(Instance *instance, Array *imports);
-Error   *vminvoke(Instance *ins, const char *func, Array *returns);
+Error   *vminvoke(Instance *ins, const char *func, Array *params,
+            Array *returns);
 Error   *interp(Function *fn, Local *local);
 void    closeinstance(Instance *instance);
 

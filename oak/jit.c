@@ -1,6 +1,7 @@
 /*
  * Copyright (C) Madlambda Authors.
  */
+
 #define _GNU_SOURCE
 #include <acorn.h>
 #include <acorn/array.h>
@@ -52,7 +53,11 @@ compile(Module *m)
             return newerror("failed to alloc blocks array");
         }
 
-        initblock(&block, 10);
+        err = initblock(&block, 10);
+        if (slow(err != NULL)) {
+            return error(err, "initializing block");
+        }
+
         arrayadd(fn.jitfn.blocks, &block);
 
         err = allocrw(&fn.jitfn, DEFAULTSIZE);

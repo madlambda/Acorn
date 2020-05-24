@@ -1580,6 +1580,36 @@ test_mov(Jitfn *jit)
         }
     }
 
+    immind(&arg, 1, RCX, 0);
+    err = movb(jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    regind(&arg, r32(RDX), RCX, 4);
+    err = movl(jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    indreg(&arg, 0x10, RCX, RCX);
+    err = movq(jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    immind(&arg, 1, RCX, 0);
+    err = movl(jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
+    immind(&arg, I32, RCX, 0 * sizeof(Value) + offsetof(Value, type));
+    err = movb(jit, &arg);
+    if (slow(err != NULL)) {
+        return err;
+    }
+
     return NULL;
 }
 

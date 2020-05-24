@@ -250,6 +250,28 @@ u32decode(u8 **begin, const u8 *end, u32 *val)
 
 
 u8
+u64decode(u8 **begin, const u8 *end, u64 *val)
+{
+    const u8  *data;
+    if (slow((end - *begin) < 8)) {
+        return ERR;
+    }
+    data = *begin;
+    *val = (u64) data[0];
+    *val |= ((u64) data[1]) << 8;
+    *val |= ((u64) data[2]) << 16;
+    *val |= ((u64) data[3]) << 24;
+    *val |= ((u64) data[4]) << 32;
+    *val |= ((u64) data[5]) << 40;
+    *val |= ((u64) data[6]) << 48;
+    *val |= ((u64) data[7]) << 56;
+
+    *begin += 8;
+    return OK;
+}
+
+
+u8
 u8encode(u8 val, u8 **begin, const u8 *end)
 {
     u8  *data;

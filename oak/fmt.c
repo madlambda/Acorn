@@ -346,7 +346,15 @@ valuefmt(String **buf, u8 ** unused(format), void *val)
 
     v = (Value *) val;
 
-    *buf = cfmtbuf(*buf, "%d", v->u.ival);
+    switch (v->type) {
+    case I32:
+        *buf = cfmtbuf(*buf, "%d", v->u.ival);
+        break;
+    default:
+        *buf = appendcstr(*buf, "<unknown>");
+        break;
+    }
+
     return OK;
 }
 
