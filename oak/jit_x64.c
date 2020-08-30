@@ -48,19 +48,19 @@ popreg(Array *a)
 Error *
 x64compile(Module *m, Function *fn)
 {
-    u8        *begin;
-    i32       i32val;
-    u32       u32val;
-    Reg       r1, r2;
-    Error     *err;
-    Array     *calleeregs;
-    Array     *callerregs;
-    Array     *usedregs;
-    Jitfn     *j;
-    Block     *current;
-    TypeDecl  *fndecl;
+    u8          *begin;
+    i32         i32val;
+    u32         u32val;
+    Reg         r1, r2;
+    Error       *err;
+    Array       *calleeregs;
+    Array       *callerregs;
+    Array       *usedregs;
+    Jitfn       *j;
+    Block       *current;
+    TypeDecl    *fndecl;
     ImportDecl  *imp;
-    const u8  *end;
+    const u8    *end;
 
     j = &fn->jitfn;
 

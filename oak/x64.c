@@ -99,13 +99,7 @@ add(Jitfn *j, Jitvalue *operands)
 static Error *
 mov(Jitfn *j, Jitvalue *operands)
 {
-    switch (operands->size) {
-    case 8:
-    case 16:
-    case 32:
-    case 64:
-        break;
-    default:
+    if (slow(operands->size % 8 != 0 && operands->size > 64)) {
         return newerror("invalid instruction size: %d", operands->size);
     }
 
