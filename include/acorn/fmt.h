@@ -14,7 +14,7 @@ typedef struct {
 } Printer;
 
 
-Printer     *newprinter();
+Printer     *newprinter(void);
 String      *pfmt(Printer *, String *format, ...);
 String      *pcfmt(Printer *, const char *format, ...);
 String      *vpfmt(Printer *, String *format, va_list args);

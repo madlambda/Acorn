@@ -1,8 +1,9 @@
 # Copyright (C) Madlambda Authors
 
 cat << END > common.mk
-CFLAGS=$CC_OPT
-LDFLAGS=$LD_OPT
+ACORN_CFLAGS=$CC_OPT
+ACORN_LDFLAGS=$LD_OPT
+ACORN_INCLUDES=$CC_INCLUDES
 
 LIBDIR=$LIBDIR
 INCDIR=$INCDIR
@@ -27,6 +28,14 @@ oak:
 .PHONY: cmd
 cmd:
 	@for c in cmd/*; do \$(MAKE) -C \$\$c; done
+
+.PHONY: linux
+linux:
+	\$(MAKE) -C linux
+
+.PHONY: linux-test
+linux-test:
+	\$(MAKE) -C linux tests
 
 .PHONY: clean
 clean:
