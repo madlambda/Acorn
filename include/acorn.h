@@ -5,10 +5,27 @@
 #ifndef _ACORN_H_
 #define _ACORN_H_
 
+
+#if __linux__ && (MODULE)
+/*
+ * TODO(i4k): properly separate kernel macros.
+ */
+#   include <linux/types.h>
+
+#if (DEBUG)
+#define debug(...) printk(KERN_INFO "acorn: " __VA_ARGS__)
+#else
+#define debug(...)
+#endif
+
+#else
 #include <inttypes.h>
+#include <assert.h>
+#endif
+
+
 #include <stddef.h>
 #include <stdarg.h>
-#include <assert.h>
 
 #include <acorn/types.h>
 

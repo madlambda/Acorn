@@ -8,6 +8,6 @@ if [ $DEBUG = "YES" ]; then
     LD_DBG="-fsanitize=address"
 fi
 
-CC_OPT="-Wall -Werror -Wextra -g -pipe $CC_DBG -I$INCDIR -I$BASEDIR/include \
-        $CC_OPT $CFLAGS"
+CC_INCLUDES="-I$INCDIR -I$BASEDIR/include"
+CC_OPT="-Wall -Werror -Wextra -g -pipe $CC_DBG $CC_INCLUDES $CC_OPT $CFLAGS"
 LD_OPT="$LD_OPT $LD_DBG $LDFLAGS"

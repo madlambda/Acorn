@@ -47,11 +47,11 @@ $(ACORN_TESTDIR):
 
 
 $(ACORN_OBJDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(ACORN_CFLAGS) $< -o $@
 
 
 $(ACORN_TESTDIR)/%_test.o: %_test.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(ACORN_CFLAGS) $< -o $@
 
 
 $(ACORN_TESTDIR)/%_test: $(ACORN_TESTDIR)/%_test.o $(OBJECTS)

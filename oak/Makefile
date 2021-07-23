@@ -57,15 +57,15 @@ $(OAK_TESTDIR):
 
 
 $(OAK_OBJDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(ACORN_CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test.o: %_test.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(ACORN_CFLAGS) $< -o $@
 
 
 $(OAK_TESTDIR)/%_test: $(OAK_TESTDIR)/%_test.o $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) $< -o $@
+	$(CC) $(ACORN_LDFLAGS) $(OBJECTS) $(LIBS) $< -o $@
 
 
 $(LIBOAK): $(OBJECTS)

@@ -21,8 +21,8 @@ $(READWASM_OBJDIR):
 
 
 $(READWASM_OBJDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(ACORN_CFLAGS) $< -o $@
 
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
+	$(CC) $(ACORN_LDFLAGS) $(OBJECTS) $(LIBS) -o $@
