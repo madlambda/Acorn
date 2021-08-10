@@ -1,5 +1,9 @@
 # Copyright (C) Madlambda Authors
 
+
+LUAJIT=""
+
+
 for option;
 do
     case "$option" in
@@ -18,6 +22,8 @@ do
         --libdir=*)                      LIBDIR="$value"                     ;;
         --incdir=*)                      INCDIR="$value"                     ;;
         --tmpdir=*)                      TMPDIR="$value"                     ;;
+
+        --luajitdir=*)                   LUAJITDIR="$value"                  ;;
 
         --debug)                         DEBUG=YES                           ;;
 
@@ -59,4 +65,9 @@ esac
 case "$TMPDIR" in
     /*)  ;;
      *)  TMPDIR="$PREFIX$TMPDIR"  ;;
+esac
+
+case "$LUAJITDIR" in
+    /*)  ;;
+     *)  LUAJITDIR="$PREFIX$TMPDIR"  ;;
 esac

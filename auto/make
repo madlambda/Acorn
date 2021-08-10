@@ -1,5 +1,9 @@
 # Copyright (C) Madlambda Authors
 
+for file in `ls $BASEDIR/auto/deps`; do
+    . $BASEDIR/auto/deps/$file
+done
+
 cat << END > common.mk
 CFLAGS=$CC_OPT
 LDFLAGS=$LD_OPT
