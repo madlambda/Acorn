@@ -5,6 +5,7 @@
 #include <acorn.h>
 #include <acorn/array.h>
 #include <oak/module.h>
+#include <oak/instance.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -25,12 +26,12 @@
 
 static u8 modulefmt(String **buf, u8 **format, void *val);
 static u8 sectidfmt(String **buf, u8 **format, void *val);
-static u8 funcfmt(String **buf, u8 **format, void *val);
 static u8 typefmt(String **buf, u8 **format, void *val);
 static u8 typedeclfmt(String **buf, u8 **format, void *val);
 static u8 extkindfmt(String **buf, u8 **format, void *val);
 static u8 importfmt(String **buf, u8 **format, void *val);
 static u8 exportfmt(String **buf, u8 **format, void *val);
+static u8 valuefmt(String **buf, u8 **format, void *val);
 
 static const char *typestr(Type t);
 static const char *extkindstr(ExternalKind kind);
@@ -82,11 +83,6 @@ oakfmt(String **buf, u8 **format, void *val)
             return extkindfmt(buf, format, val);
         }
 
-        if (cstringcmp(&typestr, "func")) {
-            *format = fmt;
-            return funcfmt(buf, format, val);
-        }
-
         if (cstringcmp(&typestr, "import")) {
             *format = fmt;
             return importfmt(buf, format, val);
@@ -95,6 +91,13 @@ oakfmt(String **buf, u8 **format, void *val)
         if (cstringcmp(&typestr, "export")) {
             *format = fmt;
             return exportfmt(buf, format, val);
+        }
+
+        /* instance values */
+
+        if (cstringcmp(&typestr, "value")) {
+            *format = fmt;
+            return valuefmt(buf, format, val);
         }
 
         return ERR;
@@ -202,17 +205,6 @@ sectidfmt(String **buf, u8 ** unused(format), void *val)
 
 
 static u8
-funcfmt(String **buf, u8 ** unused(format), void *val)
-{
-    FuncDecl  *f;
-
-    f = (FuncDecl *) val;
-
-    return typedeclfmt(buf, format, &f->type);
-}
-
-
-static u8
 typedeclfmt(String **buf, u8 ** unused(format), void *val)
 {
     u32       i;
@@ -305,7 +297,7 @@ importfmt(String **buf, u8 ** format, void *val)
     import = (ImportDecl *) val;
 
     switch (import->kind) {
-    case Function:
+    case FunctionKind:
         check(*buf, append(*buf, import->module));
         check(*buf, appendc(*buf, 1, '.'));
         check(*buf, append(*buf, import->field));
@@ -331,7 +323,7 @@ exportfmt(String **buf, u8 ** format, void *val)
     export = (ExportDecl *) val;
 
     switch (export->kind) {
-    case Function:
+    case FunctionKind:
         check(*buf, append(*buf, export->field));
         if (typedeclfmt(buf, format, &export->u.type) != OK) {
             return ERR;
@@ -341,6 +333,26 @@ exportfmt(String **buf, u8 ** format, void *val)
 
     default:
         check(*buf, appendcstr(*buf, "(not implemented)"));
+    }
+
+    return OK;
+}
+
+
+static u8
+valuefmt(String **buf, u8 ** unused(format), void *val)
+{
+    Value  *v;
+
+    v = (Value *) val;
+
+    switch (v->type) {
+    case I32:
+        *buf = cfmtbuf(*buf, "%d", v->u.ival);
+        break;
+    default:
+        *buf = appendcstr(*buf, "<unknown>");
+        break;
     }
 
     return OK;
@@ -381,16 +393,16 @@ static const char *
 extkindstr(ExternalKind kind)
 {
     switch (kind) {
-    case Function:
+    case FunctionKind:
         return "Function";
 
-    case Table:
+    case TableKind:
         return "Table";
 
-    case Memory:
+    case MemoryKind:
         return "Memory";
 
-    case Global:
+    case GlobalKind:
         return "Global";
     }
 

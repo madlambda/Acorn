@@ -31,6 +31,8 @@ String      *fmtbuf(String *buf, String *format, ...);
 String      *vfmtbuf(String *buf, String *format, va_list args);
 String      *cfmtbuf(String *buf, const char *format, ...);
 
+u8 hexfmt(String **buf, u8 **format, void *val);
+
 String      *fmtint(i64 ival, int base);
 
 

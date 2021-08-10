@@ -12,6 +12,7 @@
 /*
  * Formats supported:
  *
+ *  %%      emits %
  *  %s      null-terminated string (C string)
  *  %S      String * (Acorn string)
  *  %d      base 10 integer
@@ -24,7 +25,6 @@
  */
 static u8 wrongfmt(String **buf, u8 **format, void *val);
 static u8 intfmt(String **buf, u8 **format, void *val);
-static u8 hexfmt(String **buf, u8 **format, void *val);
 static u8 charfmt(String **buf, u8 **format, void *val);
 static u8 cstrfmt(String **buf, u8 **format, void *val);
 static u8 stringfmt(String **buf, u8 **format, void *val);
@@ -310,6 +310,12 @@ vpfmtbuf(Printer *printer, String *buf, String *sfmt, va_list args)
         }
 
         format++;
+
+        if (*format == '%') {
+            buf = appendc(buf, 1, '%');
+            format++;
+            continue;
+        }
 
         index = *format - 'A';
 
@@ -612,7 +618,7 @@ intfmt(String **buf, u8 ** format, void *val)
 }
 
 
-static u8
+u8
 hexfmt(String **buf, u8 ** format, void *val)
 {
     return baseintfmt(16, buf, format, val);

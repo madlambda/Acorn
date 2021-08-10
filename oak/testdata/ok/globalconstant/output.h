@@ -58,7 +58,7 @@ static String  globalconststring = {
 static ExportDecl  globalconstexportvals[] = {
     {
         .field  = &globalconststring,
-        .kind   = Global,
+        .kind   = GlobalKind,
         .u.global = {
             .type   = {
                 .type = I32,

@@ -1,0 +1,84 @@
+#include <sys/mman.h>
+#include <assert.h>
+
+#include "dynasm/dasm_proto.h"
+#include "dynasm/dasm_x86.h"
+
+
+|.arch x64
+|.actionlist actions
+
+
+#define Dst &state
+
+
+void initjit(dasm_State **state, const void *actionlist);
+void *jitcode(dasm_State **state);
+void freejitcode(void *code);
+
+
+int
+main(int argc, char *argv[]) {
+    int         ret;
+    dasm_State  *state;
+
+    initjit(&state, actions);
+
+    |  mov eax, 0
+    |  ret
+
+    int (*fptr)() = jitcode(&state);
+
+    ret = fptr();
+
+    freejitcode(fptr);
+
+    return ret;
+}
+
+
+void
+initjit(dasm_State **state, const void *actionlist)
+{
+    dasm_init(state, 1);
+    dasm_setup(state, actionlist);
+}
+
+
+void *
+jitcode(dasm_State **state)
+{
+    char    *mem;
+    void    *code;
+    size_t  size;
+
+    assert(DASM_S_OK == dasm_link(state, &size));
+
+    mem = mmap(NULL, size + sizeof(size_t),
+		PROT_READ | PROT_WRITE,
+        MAP_ANON | MAP_PRIVATE, -1, 0);
+
+    assert(mem != MAP_FAILED);
+
+    // Store length at the beginning of the region, so we
+    // can free it without additional context.
+    *(size_t*)mem = size;
+    code = mem + sizeof(size_t);
+
+    dasm_encode(state, code);
+    dasm_free(state);
+
+    assert(0 == mprotect(mem, size, PROT_EXEC | PROT_READ));
+
+    return code;
+}
+
+
+void
+freejitcode(void *code)
+{
+    void  *mem;
+
+    mem = (char*)code - sizeof(size_t);
+    assert(0 == munmap(mem, *(size_t*)mem));
+}

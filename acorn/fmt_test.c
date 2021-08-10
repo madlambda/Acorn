@@ -388,7 +388,6 @@ int
 main()
 {
     u32     i;
-    String  *res;
 
     static const testfn  tests[] = {
         test_invalidverbs,
@@ -398,12 +397,13 @@ main()
         test_customprinter,
     };
 
-    res = cfmt("");
-    if (slow(res == NULL)) {
+    if (assertstr(cfmt(""), "") != OK) {
         return 1;
     }
 
-    free(res);
+    if (assertstr(cfmt("%%"), "%") != OK) {
+        return 1;
+    }
 
     for (i = 0; i < nitems(tests); i++) {
         if (slow(tests[i]() != OK)) {

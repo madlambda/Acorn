@@ -1,3 +1,6 @@
+# Copyright (C) Madlambda Authors.
+
+
 include ../common.mk
 
 ACORN_OBJDIR=$(OBJDIR)/acorn

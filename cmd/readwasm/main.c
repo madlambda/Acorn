@@ -74,7 +74,7 @@ show(const char *filename)
     Error       *err;
     Module      m;
     Section     *s;
-    FuncDecl    *f;
+    TypeDecl    *type;
     ImportDecl  *import;
     ExportDecl  *export;
 
@@ -99,8 +99,8 @@ show(const char *filename)
     cprint("Types (%d):\n", len(m.types));
 
     for (i = 0; i < len(m.types); i++) {
-        f = arrayget(m.types, i);
-        cprint("\t%d -> func%o(func)\n", i, f);
+        type = arrayget(m.types, i);
+        cprint("\t%d -> func%o(typedecl)\n", i, type);
     }
 
     cprint("\nImports (%d):\n", len(m.imports));
@@ -112,9 +112,9 @@ show(const char *filename)
 
     cprint("\nFunctions (%d):\n", len(m.funcs));
 
-    for (i = 0; i < len(m.funcs); i++) {
-        f = arrayget(m.funcs, i);
-        cprint("\t%d -> %o(func)\n", i, f);
+    for (i = 0; i < len(m.functypes); i++) {
+        type = arrayget(m.functypes, i);
+        cprint("\t%d -> %o(typedecl)\n", i, type);
     }
 
     cprint("\nExports (%d):\n", len(m.exports));
@@ -137,7 +137,7 @@ showexport(const char *filename, char *funcname)
     Error       *err;
     String      field;
     Module      m;
-    FuncDecl    *fn;
+    TypeDecl    *type;
     CodeDecl    *code;
     ExportDecl  *export;
 
@@ -154,16 +154,16 @@ showexport(const char *filename, char *funcname)
         goto fail;
     }
 
-    if (slow(export->kind != Function)) {
+    if (slow(export->kind != FunctionKind)) {
         err = newerror("export is not a function but %o(extkind)", export->kind);
         goto fail;
     }
 
-    for (i = 0; i < len(m.funcs); i++) {
-        fn = arrayget(m.funcs, i);
+    for (i = 0; i < len(m.functypes); i++) {
+        type = arrayget(m.functypes, i);
 
-        if (fn->type.index == export->u.type.index) {
-            cprint("found func: %o(func)\n", fn);
+        if (type->index == export->u.type.index) {
+            cprint("found func: %o(typedecl)\n", type);
 
             code = arrayget(m.codes, i);
             if (fast(code != NULL)) {

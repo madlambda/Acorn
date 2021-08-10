@@ -247,3 +247,128 @@ u32decode(u8 **begin, const u8 *end, u32 *val)
     *begin += 4;
     return OK;
 }
+
+
+u8
+u64decode(u8 **begin, const u8 *end, u64 *val)
+{
+    const u8  *data;
+    if (slow((end - *begin) < 8)) {
+        return ERR;
+    }
+    data = *begin;
+    *val = (u64) data[0];
+    *val |= ((u64) data[1]) << 8;
+    *val |= ((u64) data[2]) << 16;
+    *val |= ((u64) data[3]) << 24;
+    *val |= ((u64) data[4]) << 32;
+    *val |= ((u64) data[5]) << 40;
+    *val |= ((u64) data[6]) << 48;
+    *val |= ((u64) data[7]) << 56;
+
+    *begin += 8;
+    return OK;
+}
+
+
+u8
+u8encode(u8 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    data = *begin;
+
+    if (slow((end - data) < 1)) {
+        return ERR;
+    }
+
+    *data++ = (u8) val;
+    *begin = data;
+    return OK;
+}
+
+
+u8
+u16encode(u16 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    if (slow((end - *begin) < 2)) {
+        return ERR;
+    }
+
+    data = *begin;
+
+    data[0] = (val & 0xff);
+    data[1] = (val >> 8) & 0xff;
+
+    *begin += 2;
+    return OK;
+}
+
+
+u8
+u32encode(u32 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    if (slow((end - *begin) < 4)) {
+        return ERR;
+    }
+
+    data = *begin;
+
+    data[0] = (val & 0xff);
+    data[1] = (val >> 8) & 0xff;
+    data[2] = (val >> 16) & 0xff;
+    data[3] = (val >> 24) & 0xff;
+
+    *begin += 4;
+    return OK;
+}
+
+
+u8
+u64encode(u64 val, u8 **begin, const u8 *end)
+{
+    u8  *data;
+
+    if (slow((end - *begin) < 8)) {
+        return ERR;
+    }
+
+    data = *begin;
+
+    data[0] = (val & 0xff);
+    data[1] = (val >> 8) & 0xff;
+    data[2] = (val >> 16) & 0xff;
+    data[3] = (val >> 24) & 0xff;
+    data[4] = (val >> 32) & 0xff;
+    data[5] = (val >> 40) & 0xff;
+    data[6] = (val >> 48) & 0xff;
+    data[7] = (val >> 56) & 0xff;
+
+    *begin += 8;
+    return OK;
+}
+
+
+u8
+uencode(u64 val, u8 bits, u8 **begin, const u8 *end)
+{
+    switch (bits) {
+    case 8:
+        return u8encode(val, begin, end);
+
+    case 16:
+        return u16encode(val, begin, end);
+
+    case 32:
+        return u32encode(val, begin, end);
+
+    case 64:
+        return u64encode(val, begin, end);
+    }
+
+    return ERR;
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Madlambda Authors
+ * Copyright (C) Madlambda Authors.
  */
 
 #include <stdio.h>
@@ -129,7 +129,7 @@ loadmodule(Module *mod, const char *filename)
 
 free:
 
-    free(mod);
+    closemodule(mod);
 
 fail:
 
@@ -181,7 +181,7 @@ parsesect(u8 **begin, const u8 *end, Section *s)
     }
 
     if (slow(u32vdecode(begin, end, &s->len) != OK)) {
-        return newerror("malformed section len");
+        return newerror("malformed section len: %d", s->id);
     }
 
     s->data = *begin;
@@ -266,7 +266,7 @@ parsetypes(Module *m, u8 *begin, const u8 *end)
 
             value = -i8val;
 
-            if (slow(arrayadd(type.params, &value) != OK)) {
+            if (slow(arrayadd(type.rets, &value) != OK)) {
                 return earrayadd();
             }
         }
@@ -349,7 +349,7 @@ parseimports(Module *m, u8 *begin, const u8 *end)
         }
 
         switch (import.kind) {
-        case Function:
+        case FunctionKind:
             type = arrayget(m->types, u8val);
             if (slow(type == NULL)) {
                 return newerror("import section references unknown function");
@@ -375,10 +375,9 @@ static Error *
 parsefunctions(Module *m, u8 *begin, const u8 *end)
 {
     u32       count, uval;
-    FuncDecl  f;
     TypeDecl  *type;
 
-    if (slow(m->funcs != NULL)) {
+    if (slow(m->functypes != NULL)) {
         return edupsect(functionsect);
     }
 
@@ -386,12 +385,12 @@ parsefunctions(Module *m, u8 *begin, const u8 *end)
         return ecorruptsect(functionsect);
     }
 
-    m->funcs = newarray(count, sizeof(FuncDecl));
-    if (slow(m->funcs == NULL)) {
+    m->functypes = newarray(count, sizeof(TypeDecl));
+    if (slow(m->functypes == NULL)) {
         return earrayalloc();
     }
 
-    while (len(m->funcs) < count && begin < end) {
+    while (len(m->functypes) < count && begin < end) {
         if (slow(u32vdecode(&begin, end, &uval))) {
             return ecorruptsect(functionsect);
         }
@@ -401,14 +400,12 @@ parsefunctions(Module *m, u8 *begin, const u8 *end)
             return newerror("type \"%d\" not found", uval);
         }
 
-        f.type = *type;
-
-        if (slow(arrayadd(m->funcs, &f) != OK)) {
+        if (slow(arrayadd(m->functypes, type) != OK)) {
             return earrayadd();
         }
     }
 
-    if (slow(len(m->funcs) < count)) {
+    if (slow(len(m->functypes) < count)) {
         return ecorruptsect(functionsect);
     }
 
@@ -542,7 +539,7 @@ parseglobals(Module *m, u8 *begin, const u8 *end)
         opcode = *begin++;
 
         switch (opcode) {
-        case OpgetGlobal:
+        case Opgetglobal:
             if (slow(u32vdecode(&begin, end, &global.u.globalindex) != OK)) {
                 return emalformed("get_global", globalsect);
             }
@@ -571,14 +568,14 @@ parseglobals(Module *m, u8 *begin, const u8 *end)
             break;
 
         case Opf64const:
-            if (slow(u32decode(&begin, end, &global.u.f32val) != OK)) {
+            if (slow(u64decode(&begin, end, &global.u.f64val) != OK)) {
                 emalformed("f64.const", globalsect);
             }
 
             break;
 
         default:
-            return newerror("unsupported global expression");
+            return newerror("unsupported global expression: %d", opcode);
         }
 
         if (slow(arrayadd(m->globals, &global) != OK)) {
@@ -638,7 +635,7 @@ parseexports(Module *m, u8 *begin, const u8 *end)
         }
 
         switch (export.kind) {
-        case Function:
+        case FunctionKind:
             type = arrayget(m->types, uval);
             if (slow(type == NULL)) {
                 return newerror("export type %d not found", uval);
@@ -647,7 +644,7 @@ parseexports(Module *m, u8 *begin, const u8 *end)
             export.u.type = *type;
             break;
 
-        case Global:
+        case GlobalKind:
             global = arrayget(m->globals, uval);
             if (slow(global == NULL)) {
                 return newerror("export global %d not found", uval);
@@ -910,8 +907,8 @@ closemodule(Module *m)
         freearray(m->types);
     }
 
-    if (m->funcs) {
-        freearray(m->funcs);
+    if (m->functypes) {
+        freearray(m->functypes);
     }
 
     if (m->imports) {
@@ -958,5 +955,9 @@ closemodule(Module *m)
         }
 
         freearray(m->codes);
+    }
+
+    if (m->funcs != NULL) {
+        freearray(m->funcs);
     }
 }

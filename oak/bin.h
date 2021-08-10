@@ -2,7 +2,6 @@
  * Copyright (C) Madlambda Authors.
  */
 
-
 #ifndef _OAK_BIN_H_
 #define _OAK_BIN_H_
 
@@ -24,7 +23,12 @@ u8 s64vdecode(u8 **begin, const u8 *end, i64 *val);
 /*
  * fixed little-endian encoders and decoders
  */
+u8 u16encode(u16 val, u8 **begin, const u8 *end);
+u8 u32encode(u32 val, u8 **begin, const u8 *end);
 u8 u32decode(u8 **begin, const u8 *end, u32 *val);
+u8 u64decode(u8 **begin, const u8 *end, u64 *val);
+u8 u64encode(u64, u8 **begin, const u8 *end);
+u8 uencode(u64 val, u8 size, u8 **begin, const u8 *end);
 
 
 ssize_t uleb128encode(u64 v, u8 *begin, u8 *end);

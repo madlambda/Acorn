@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include <acorn.h>
+#include <oak/file.h>
 #include "bin.h"
 #include "test.h"
 

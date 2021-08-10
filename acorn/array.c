@@ -2,10 +2,12 @@
  * Copyright (C) Madlambda Authors
  */
 
-#include <acorn.h>
-#include <acorn/array.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <acorn.h>
+#include <acorn/array.h>
+
 
 
 static u8 grow(Array *array);
@@ -23,15 +25,12 @@ newarray(u32 n, size_t size)
         return NULL;
     }
 
-    array = malloc(sizeof(Array) + n * size);
+    array = malloc(arraytotalsize(n, size));
     if (slow(array == NULL)) {
         return NULL;
     }
 
-    array->len = 0;
-    array->nalloc = n;
-    array->size = size;
-    array->items = offset(array, sizeof(Array));
+    initarrayfrom(array, n, size, 1);
 
     return array;
 }
@@ -41,6 +40,10 @@ void
 freearray(Array *array)
 {
     void  *p;
+
+    if(!array->heap) {
+        return;
+    }
 
     p = offset(array, sizeof(Array));
     if (array->items != p) {
@@ -71,11 +74,35 @@ arrayadd(Array *array, void *val)
 }
 
 
+u8
+arraypush(Array *array, void *val)
+{
+    return arrayadd(array, val);
+}
+
+
+void *
+arraypop(Array *array)
+{
+    void  *val;
+
+    expect(array->len > 0);
+
+    val = arrayget(array, array->len - 1);
+    array->len--;
+    return val;
+}
+
+
 static u8
 grow(Array *array)
 {
     u32   nalloc, newalloc;
     void  *p, *p2;
+
+    if (!array->heap) {
+        return ERR;
+    }
 
     nalloc = array->nalloc;
 
