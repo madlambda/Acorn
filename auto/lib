@@ -1,0 +1,9 @@
+
+
+check_tool()
+{
+    TOOL="$1"
+    MSG="$2"
+
+    which "$TOOL" 2>&1 >/dev/null || (echo $MSG && exit 1;)
+}

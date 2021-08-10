@@ -1,0 +1,49 @@
+# Copyright (C) Madlambda Authors
+
+LUAURL="https://luajit.org/git/luajit.git"
+ERRFILE=$OBJDIR/luajit-log
+
+check_tool git "git not found in $PATH"
+
+if [ -d "$LUAJITDIR" -o -d $OBJDIR/luajit ]; then
+    return
+fi
+
+echo -n "DynASM not found: installing... "
+
+cd $OBJDIR
+
+git clone $LUAURL 1>/dev/null 2>&1
+
+LUAJITDIR="$OBJDIR/luajit"
+
+cd $LUAJITDIR
+
+make 1>$ERRFILE 2>&1
+
+if [ ! -d $OBJDIR/luajit/dynasm ]; then
+    echo "dynasm not found"
+    exit 1
+fi
+
+DYNASM=$OBJDIR/luajit/dynasm/dynasm.lua
+
+if [ -z $LUAJIT ]; then
+    LUAJIT=$OBJDIR/luajit/src/luajit
+fi
+
+mkdir -p $OBJDIR/auto/dynasm
+
+$LUAJIT $DYNASM $BASEDIR/auto/samples/dynasm1.dasc 1>                         \
+    $OBJDIR/auto/dynasm/dynasm1.c 2>$ERRFILE
+
+$CC -Wall -Werror -I$LUAJITDIR -o $OBJDIR/auto/dynasm/dynasm1                 \
+    $OBJDIR/auto/dynasm/dynasm1.c 1>$ERRFILE 2>&1
+
+$OBJDIR/auto/dynasm/dynasm1
+if [ "$?" != "0" ]; then
+    echo "jit failed. Exiting."
+    exit 1
+fi
+
+echo "ok"
