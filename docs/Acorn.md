@@ -43,7 +43,7 @@ deviations from browser vendors. The size of a web browser code base is close
 to the size of some operating systems.
 
 Plan9 is a full-featured operating system built from scratch with this idea of seamless distribution
-implemented in the 90s but did not get traction in user adoption and the most
+implemented in the 90s, but did not get traction in user adoption, the biggest
 reason was the lack of a modern web browser. Because of the size of the web
 stack, porting a browser to plan9 was so challenging that plan9 developers
 felt it was easier to port plan9 userspace to other operating systems.
