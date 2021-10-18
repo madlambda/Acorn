@@ -37,7 +37,8 @@ could restore your files from past archives easily?
 That’s some of the things envisioned by Acorn OS.
 
 The web is here to stay, then any new operating system should at least have a
-browser otherwise users could not adopt. The web stack is huge, bad designed
+browser otherwise users could not adopt. The web stack is huge, badly designed
+
 and hard to implement properly because there are tons of standards and several
 deviations from browser vendors. The size of a web browser code base is close
 to the size of some operating systems.
