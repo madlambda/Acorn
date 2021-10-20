@@ -270,11 +270,11 @@ The Operating System interface must have a way to answer questions like below
 4. From F, set field "title" with value "Journey To The Centre Of The Earth";
 5. From F, give me the byte array representation of the file;
 
-_Requirement 1_ make it clear that the implementation must store the type
+**Requirement 1** make it clear that the implementation must store the type
 signature in the file system as well (or have a way to infer it from the stored
 data).
 
-_Requirement 3_ is simple, but what if the field content is bigger than the available memory? What if the field contains another structure?
+**Requirement 3** is simple, but what if the field content is bigger than the available memory? What if the field contains another structure?
 
 _Requirement 5_ says that even for structured files, UNIX commands like cat,
 grep and so on, must continue to work as expected;
