@@ -227,7 +227,7 @@ implementation of default values for each type:
 - unbounded arrays are empty, ie occupy no space ([]byte, []int, ...)
 - bounded arrays stores the default value of its members ([4]byte, [2]int32, ...)
 - bool is false
-- datetime is current time.
+- datetime is its creation time.
 - struct stores the default values of its members.
 
 Which means users can benefit of default value to simplify their programs. Eg.:
