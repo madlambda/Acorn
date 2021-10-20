@@ -146,7 +146,8 @@ https://pdfs.semanticscholar.org/99bc/fbe095b591c696809ca21533bcd1d5502587.pdf
 
 ## Introducing Typed Files
 
-From the words of Dennis Ritchie and Ken Thompson:
+Lets first define how files looks today on most systems,
+from the words of Dennis Ritchie and Ken Thompson:
 
 ```
 A file contains whatever information the user places on
