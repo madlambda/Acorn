@@ -183,7 +183,7 @@ file type.
 A typed file system extends these UNIX types and makes explicit its type
 structure. A directory become a file of type "structure", which means it holds
 attributes or member fields. The regular UNIX file is just a file of type
-“byte array” or []byte. Other file types can be used to constraint the kind
+“byte array” or []byte. Other file types can be used to constrain the kind
 of data user can put on it. For example, a file of type "int32" only accepts
 32-bit signed integers, a file of type "[4]byte" only accepts 4 bytes and so on.
 
