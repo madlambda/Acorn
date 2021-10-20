@@ -2,8 +2,8 @@
 
 ## Introduction
 
-The concept of a file is the same (or very close) on most operating systems of
-today. The content of a file is a one-dimensional byte array where the meaning
+The concept of a file is the same (or very close) on most operating systems these
+days. The content of a file is a one-dimensional byte array where the meaning
 of its content comes from the reader's interpretation. The basic file
 operations are: create, open, read, write, seek and close. That simplicity has
 a huge impact on the success of Multics and Unix, and it still benefits today's
