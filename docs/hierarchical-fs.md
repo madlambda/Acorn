@@ -13,7 +13,7 @@ or stdout) could be piped into the input (the standard input file or stdin) of
 another to solve complex tasks by just using byte manipulation tools. For this
 to work, a special kind of file, called pipe, and a convention (eg.: read from
 stdin, write to stdout, configurations from arguments, seeks are not allowed or
-ignored, and so on) must be in place:
+ignored, and so on) must be in place.
 
 If the file is on disk, then the time to sequentially read 1 MB of its content
 is around 20ms (or 150 us from a SSD disk) and if the file is a pipe, then the
