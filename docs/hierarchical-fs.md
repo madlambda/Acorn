@@ -215,8 +215,8 @@ struct {
 }
 ```
 
-When structured, it’s not wrong to say that the file idea starts to confuse
-with a filesystem or a database and this similarity will be more evident in the
+When structured, the file idea starts to look a lot like a filesystem
+or a database and this similarity will be more evident in the
 subsequent sections.
 
 Each type can also has a default value. Below is the description of a possible
