@@ -67,7 +67,7 @@ from your notebook to your mobile phone, a server or your friend’s computer.
 * Simple programming interfaces (easy to write graphical or distributed apps)
 * Have a modern browser, that means you could use Acorn browser instead of open
 chrome/firefox
-* Be network distributed, in the sense that multiple Acorn servers provides the
+* Highly distributed, in the sense that multiple Acorn servers provides the
 set of visible resources in each terminal.
 * Interoperate and extend current technologies (Containers, Kubernetes, etc)
 
@@ -150,8 +150,9 @@ infrastructure. There are several benefits of using a remote file server but
 this will be discussed extensively in the next section.
 
 The symbol λ> is the shell prompt. Now you can type commands into the system
-but Acorn is better with the graphical user interface (GUI). You can start the
-window manager typing:
+but Acorn is easier to use with a graphical user interface (GUI). You can start the
+window manager by typing:
+
 
 
 ```
@@ -204,7 +205,7 @@ Screenfs supports a Vector and Raster interface.
 ```
 
 When open /dev/screen/vector2d you get a context for a 2D canvas area in the
-browser. And then you could issue commands like “fillRect(25, 25, 100, 100)” to
+window manager. And then you could issue commands like “fillRect(25, 25, 100, 100)” to
 fill a rectangle at pos x=25, y=25 with width=100 and height=100. Same browser
 API defined here.
 
